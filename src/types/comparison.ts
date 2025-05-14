@@ -8,7 +8,7 @@ export interface Difference {
   referenceContent?: string;
 }
 
-// ... existing code ...
+
   
   export interface ComparisonResult {
     differences: Difference[];

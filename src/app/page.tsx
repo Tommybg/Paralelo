@@ -3,7 +3,7 @@
 import React, { useState, useEffect, JSX } from 'react';
 import { Card, CardContent } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
-import { Upload, Loader2, Settings } from 'lucide-react';
+import { Upload, Loader2 } from 'lucide-react';
 import { compareDocuments } from '@/lib/services/comparisonService';
 import type { ComparisonResult } from '@/types/comparison';
 import { extractTextFromFile } from '@/lib/utils/Processor';
@@ -15,34 +15,6 @@ interface FileInfo {
   name: string;
   type: string;
 }
-
-interface Difference {
-  type: 'addition' | 'deletion' | 'modification';
-  content: string;
-  startIndex?: number;
-  endIndex?: number;
-  location: string;
-  significance: string;
-  referenceContent?: string;
-}
-
-const DocumentContent = ({ content }: { content: string }) => {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return null;
-  }
-
-  return (
-    <pre className="whitespace-pre-wrap font-mono text-sm break-words">
-      {content}
-    </pre>
-  );
-};
 
 export default function Home() {
   const [doc1, setDoc1] = useState<FileInfo | null>(null);
@@ -421,7 +393,7 @@ export default function Home() {
                                'Modificación'}
                             </div>
                             <div className="text-sm mb-1 text-gray-800">
-                              <span className="font-medium">Contenido:</span> "{diff.content}"
+                              <span className="font-medium">Contenido:</span> &quot;{diff.content}&quot;
                             </div>
                             <div className="text-sm mb-1 text-gray-800">
                               <span className="font-medium">Ubicación:</span> {diff.location}

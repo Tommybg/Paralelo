@@ -1,4 +1,4 @@
-import { ComparisonResult, ComparisonError } from '@/types/comparison';
+import { ComparisonResult } from '@/types/comparison';
 
 export async function compareDocuments(doc1: string, doc2: string): Promise<ComparisonResult> {
   try {
