@@ -226,12 +226,12 @@ export default function Home() {
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 p-6">
       {/* Logo in the top right corner */}
-      <div className="fixed top-4 right-4 z-50">
+      <div className="fixed top-1 right-2 z-50">
         <Image 
           src="/logo_nobg.png" 
           alt="LegisCheck Logo" 
-          width={170} 
-          height={80}
+          width={110} 
+          height={30}
         />
       </div>
       
