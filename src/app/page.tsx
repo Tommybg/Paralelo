@@ -225,6 +225,16 @@ export default function Home() {
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 p-6">
+      {/* Logo in the top right corner */}
+      <div className="fixed top-4 right-4 z-50">
+        <Image 
+          src="/logo_nobg.png" 
+          alt="LegisCheck Logo" 
+          width={170} 
+          height={80}
+        />
+      </div>
+      
       <button
         className="fixed top-2 left-4 backdrop-blur-sm hover:bg-black/20 z-50 w-12 h-12 rounded-xl flex items-center justify-center"
         onClick={() => setIsSidebarOpen(true)}
