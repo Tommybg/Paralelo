@@ -118,8 +118,8 @@ export default function Home() {
 
     if (!comparison) {
       return (
-        <div className="overflow-auto h-full">
-          <pre className="whitespace-pre-wrap font-mono text-sm break-words text-gray-500">
+        <div className="overflow-auto h-full w-full">
+          <pre className="whitespace-pre-wrap font-mono text-sm break-all text-gray-500 w-full">
             {doc.text}
           </pre>
         </div>
@@ -169,7 +169,7 @@ export default function Home() {
 
       if (start > cursor) {
         spans.push(
-          <span key={`plain-${cursor}-${start}`} className="text-gray-500">
+          <span key={`plain-${cursor}-${start}`} className="text-gray-500 break-words">
             {doc.text.slice(cursor, start)}
           </span>
         );
@@ -189,7 +189,7 @@ export default function Home() {
       spans.push(
         <span
           key={`diff-${start}-${end}`}
-          className={`${highlightClass} px-1 rounded relative group`}
+          className={`${highlightClass} px-1 rounded relative group break-words`}
           title={diff.type.charAt(0).toUpperCase() + diff.type.slice(1)}
         >
           {doc.text.slice(start, end)}
@@ -204,15 +204,15 @@ export default function Home() {
 
     if (cursor < doc.text.length) {
       spans.push(
-        <span key={`plain-tail-${cursor}`} className="text-gray-500">
+        <span key={`plain-tail-${cursor}`} className="text-gray-500 break-words">
           {doc.text.slice(cursor)}
         </span>
       );
     }
 
     return (
-      <div className="overflow-auto h-full">
-        <pre className="whitespace-pre-wrap font-mono text-sm break-words">
+      <div className="overflow-auto h-full w-full">
+        <pre className="whitespace-pre-wrap font-mono text-sm break-words w-full">
           {spans}
         </pre>
       </div>
@@ -256,9 +256,9 @@ export default function Home() {
         setTemperature={setTemperature}
       />
 
-      <main className="flex h-[calc(100vh-6rem)] mx-auto max-w-[1400px] gap-6 overflow-hidden bg-white/10 backdrop-blur-md rounded-xl border-2 border-blue-400/50 border-white/10 shadow-xl p-6 relative before:absolute before:inset-0 before:rounded-xl before:border-2 before:border-blue-400/20 before:animate-pulse">
+      <main className="flex flex-col md:flex-row h-[calc(100vh-6rem)] mx-auto max-w-[1400px] gap-6 overflow-hidden bg-white/10 backdrop-blur-md rounded-xl border-2 border-blue-400/50 border-white/10 shadow-xl p-6 relative before:absolute before:inset-0 before:rounded-xl before:border-2 before:border-blue-400/20 before:animate-pulse">
         {/* Left Document Panel */}
-        <div className="flex-[1.2] flex flex-col gap-4 min-h-0">
+        <div className="flex-[1.2] flex flex-col gap-4 min-h-0 w-full min-w-0">
           <div className="flex items-center gap-2 shrink-0">
             <Button 
               onClick={() => document.getElementById('doc1-upload')?.click()}
@@ -293,15 +293,15 @@ export default function Home() {
             onChange={(e) => e.target.files?.[0] && handleFileUpload(1, e.target.files[0])}
             className="hidden"
           />
-          <Card className="flex-1 min-h-0 max-h-[calc(100vh-12rem)] bg-white/80 backdrop-blur-sm">
-            <CardContent className="h-full overflow-auto text-gray-600">
+          <Card className="flex-1 min-h-0 max-h-[calc(100vh-12rem)] bg-white/80 backdrop-blur-sm w-full">
+            <CardContent className="h-full overflow-auto text-gray-600 w-full">
               {renderDocument(doc1, true)}
             </CardContent>
           </Card>
         </div>
 
         {/* Right Document Panel */}
-        <div className="flex-[1.2] flex flex-col gap-4 min-h-0">
+        <div className="flex-[1.2] flex flex-col gap-4 min-h-0 w-full min-w-0">
           <div className="flex items-center gap-2 shrink-0">
             <Button 
               onClick={() => document.getElementById('doc2-upload')?.click()}
@@ -336,15 +336,15 @@ export default function Home() {
             onChange={(e) => e.target.files?.[0] && handleFileUpload(2, e.target.files[0])}
             className="hidden"
           />
-          <Card className="flex-1 min-h-0 max-h-[calc(100vh-12rem)] bg-white/80 backdrop-blur-sm">
-            <CardContent className="h-full overflow-auto text-gray-600">
+          <Card className="flex-1 min-h-0 max-h-[calc(100vh-12rem)] bg-white/80 backdrop-blur-sm w-full">
+            <CardContent className="h-full overflow-auto text-gray-600 w-full">
               {renderDocument(doc2, false)}
             </CardContent>
           </Card>
         </div>
 
         {/* Analysis Panel */}
-        <div className="flex-[1] flex flex-col gap-4 min-h-0 max-w-md">
+        <div className="flex-[1] flex flex-col gap-4 min-h-0 max-w-md w-full min-w-0">
           <Button 
             onClick={handleComparison} 
             disabled={!doc1 || !doc2 || loading}
