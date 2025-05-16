@@ -32,6 +32,13 @@ export default function Home() {
     setMounted(true);
   }, []);
 
+  const truncateFileName = (name: string, maxLength: number = 30): string => {
+    if (name.length <= maxLength) {
+      return name;
+    }
+    return name.substring(0, maxLength - 3) + "...";
+  };
+
   const handleFileUpload = async (docNumber: 1 | 2, file: File) => {
     try {
       setError(null);
@@ -169,7 +176,7 @@ export default function Home() {
 
       if (start > cursor) {
         spans.push(
-          <span key={`plain-${cursor}-${start}`} className="text-gray-500 break-words">
+          <span key={`plain-${cursor}-${start}`} className="text-gray-500">
             {doc.text.slice(cursor, start)}
           </span>
         );
@@ -189,7 +196,7 @@ export default function Home() {
       spans.push(
         <span
           key={`diff-${start}-${end}`}
-          className={`${highlightClass} px-1 rounded relative group break-words`}
+          className={`${highlightClass} px-1 rounded relative group`}
           title={diff.type.charAt(0).toUpperCase() + diff.type.slice(1)}
         >
           {doc.text.slice(start, end)}
@@ -204,7 +211,7 @@ export default function Home() {
 
     if (cursor < doc.text.length) {
       spans.push(
-        <span key={`plain-tail-${cursor}`} className="text-gray-500 break-words">
+        <span key={`plain-tail-${cursor}`} className="text-gray-500">
           {doc.text.slice(cursor)}
         </span>
       );
@@ -271,7 +278,7 @@ export default function Home() {
             {doc1 && (
               <div className="relative group">
                 <span className="text-sm text-white truncate max-w-[200px] bg-black/20 px-2 py-1 rounded-md">
-                  {doc1.name}
+                  {truncateFileName(doc1.name)}
                 </span>
                 <button
                   onClick={() => {
@@ -314,7 +321,7 @@ export default function Home() {
             {doc2 && (
               <div className="relative group">
                 <span className="text-sm text-white truncate max-w-[200px] bg-black/20 px-2 py-1 rounded-md">
-                  {doc2.name}
+                  {truncateFileName(doc2.name)}
                 </span>
                 <button
                   onClick={() => {
@@ -375,7 +382,13 @@ export default function Home() {
                   <div className="space-y-4">
                     <div>
                       <h4 className="font-medium mb-2 text-gray-800">Resumen</h4>
-                      <p className="text-gray-800 text-sm">{comparison.summary}</p>
+                      <p className="text-gray-800 text-sm">
+                        {typeof comparison.summary === 'string' 
+                          ? comparison.summary 
+                          : typeof comparison.summary === 'object' && comparison.summary !== null 
+                            ? Object.values(comparison.summary).filter(v => typeof v === 'string').join(' ')
+                            : 'Resumen no disponible'}
+                      </p>
                     </div>
 
                     {comparison.impactAnalysis && (
