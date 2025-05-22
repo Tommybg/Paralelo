@@ -3,11 +3,17 @@
 import React, { useState, useEffect, JSX } from 'react';
 import { Card, CardContent } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
-import { Upload, Loader2 } from 'lucide-react';
+import { Upload, Loader2, Search, X, Flag } from 'lucide-react';
 import { compareDocuments } from '@/lib/services/comparisonService';
-import type { ComparisonResult } from '@/types/comparison';
+import type { ComparisonResult, DocumentVersion } from '@/types/comparison';
 import { extractTextFromFile } from '@/lib/utils/Processor';
 import { Sidebar } from '@/components/common/sidebar';
+import { Timeline, TimelineCompact } from '@/components/common/Timeline';
+import { SearchFilters, FilterOptions } from '@/components/common/SearchFilters';
+import { Milestone, MilestoneType } from '@/types/timeline';
+import { HistoryEntry } from '@/types/timeline';
+import { generateReport } from '@/lib/services/reportService';
+import { ReportOptions } from '@/components/common/ReportGenerator';
 import Image from 'next/image';
 
 interface FileInfo {
@@ -24,13 +30,154 @@ export default function Home() {
   const [comparison, setComparison] = useState<ComparisonResult | null>(null);
   const [mounted, setMounted] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [apiKey, setApiKey] = useState('');
-  // const [systemPrompt, setSystemPrompt] = useState(SYSTEM_PROMPT);
-  const [temperature, setTemperature] = useState(0.3);
+  
+  // Definir los nombres de visualización para los tipos de hitos
+  const milestoneLabels: Record<MilestoneType, string> = {
+    radicacion: 'Radicación',
+    comision_primera: 'Comisión Primera',
+    comision_segunda: 'Comisión Segunda',
+    plenaria: 'Plenaria',
+    conciliacion: 'Conciliación',
+    sancion: 'Sanción',
+  };
+  
+  // New state for timeline, history, and search
+  const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [currentMilestoneId, setCurrentMilestoneId] = useState<string | undefined>();
+  const [currentStage, setCurrentStage] = useState<MilestoneType | undefined>();
+  const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
+  const [selectedHistoryEntryId, setSelectedHistoryEntryId] = useState<string | undefined>();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterOptions, setFilterOptions] = useState<FilterOptions>({
+    diffTypes: ['addition', 'deletion', 'modification'],
+    articleIds: [],
+    authors: [],
+  });
+  const [filteredDifferences, setFilteredDifferences] = useState<ComparisonResult['differences']>([]);
+  const [documentVersions, setDocumentVersions] = useState<DocumentVersion[]>([]);
+  
+  // Estado para controlar el sidebar
+  const [activeTab, setActiveTab] = useState<'timeline' | 'history' | 'reports'>('timeline');
 
   useEffect(() => {
     setMounted(true);
+    
+    // Initialize with some example milestones en orden correcto
+    const initialMilestones: Milestone[] = [
+      {
+        id: 'milestone-1',
+        type: 'radicacion',
+        title: 'Radicación',
+        date: '2023-08-01',
+        description: 'Presentación inicial del proyecto',
+      },
+      {
+        id: 'milestone-2',
+        type: 'comision_primera',
+        title: 'Comisión Primera',
+        date: '2023-09-15',
+        description: 'Debate en comisión primera',
+      },
+      {
+        id: 'milestone-3',
+        type: 'plenaria',
+        title: 'Plenaria',
+        date: '2023-10-30',
+        description: 'Debate en plenaria',
+      },
+    ];
+    
+    // Ordenarlos según el proceso legislativo natural
+    const milestoneOrder: MilestoneType[] = [
+      'radicacion',
+      'comision_primera',
+      'comision_segunda',
+      'plenaria',
+      'conciliacion',
+      'sancion'
+    ];
+    
+    const sortedMilestones = [...initialMilestones].sort((a, b) => {
+      const aIndex = milestoneOrder.indexOf(a.type);
+      const bIndex = milestoneOrder.indexOf(b.type);
+      return aIndex - bIndex;
+    });
+    
+    setMilestones(sortedMilestones);
+    
+    // Set initial current stage como el más avanzado
+    const furthestMilestone = sortedMilestones[sortedMilestones.length - 1];
+    if (furthestMilestone) {
+      setCurrentStage(furthestMilestone.type);
+      setCurrentMilestoneId(furthestMilestone.id);
+    } else {
+      // Default to radicacion if no milestones
+      setCurrentStage('radicacion');
+    }
+    
+    // Initialize with some example history entries
+    setHistoryEntries([
+      {
+        id: 'history-1',
+        date: '2023-08-01',
+        author: 'Juan Pérez',
+        type: 'comision',
+        description: 'Revisión inicial en comisión',
+        changes: {
+          additions: 5,
+          deletions: 2,
+          modifications: 3,
+        },
+        documentVersionId: 'version-1',
+      },
+      {
+        id: 'history-2',
+        date: '2023-09-15',
+        author: 'María López',
+        type: 'plenaria',
+        description: 'Modificaciones aprobadas en plenaria',
+        changes: {
+          additions: 2,
+          deletions: 1,
+          modifications: 7,
+        },
+        documentVersionId: 'version-2',
+      },
+    ]);
   }, []);
+
+  // Filter differences when search query or filter options change
+  useEffect(() => {
+    if (!comparison) return;
+    
+    let filtered = [...comparison.differences];
+    
+    // Filter by difference types
+    if (filterOptions.diffTypes.length > 0) {
+      filtered = filtered.filter(diff => filterOptions.diffTypes.includes(diff.type));
+    }
+    
+    // Filter by search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(diff => 
+        diff.content.toLowerCase().includes(query) || 
+        diff.location.toLowerCase().includes(query) ||
+        diff.significance.toLowerCase().includes(query)
+      );
+    }
+    
+    // Filter by article IDs if any are selected
+    if (filterOptions.articleIds.length > 0) {
+      filtered = filtered.filter(diff => {
+        const articleMatch = diff.location.match(/Art(?:ículo|icle)\s+(\d+)/i);
+        const articleId = articleMatch ? articleMatch[1] : 'other';
+        return filterOptions.articleIds.includes(articleId);
+      });
+    }
+    
+    setFilteredDifferences(filtered);
+  }, [comparison, searchQuery, filterOptions]);
 
   const truncateFileName = (name: string, maxLength: number = 30): string => {
     if (name.length <= maxLength) {
@@ -105,13 +252,243 @@ export default function Home() {
       setComparison({ 
         ...result, 
         differences: enriched 
-      }); 
+      });
+      
+      // Set filtered differences initially to all differences
+      setFilteredDifferences(enriched);
+      
+      // Add this comparison to history
+      const newHistoryEntry: HistoryEntry = {
+        id: `history-${Date.now()}`,
+        date: new Date().toISOString(),
+        author: 'Usuario Actual',
+        type: 'otro',
+        description: `Comparación entre ${doc1.name} y ${doc2.name}`,
+        changes: {
+          additions: enriched.filter(d => d.type === 'addition').length,
+          deletions: enriched.filter(d => d.type === 'deletion').length,
+          modifications: enriched.filter(d => d.type === 'modification').length,
+        },
+        documentVersionId: `version-${Date.now()}`,
+      };
+      
+      setHistoryEntries(prev => [newHistoryEntry, ...prev]);
+      
+      // Abrir el sidebar en la pestaña de timeline
+      setActiveTab('timeline');
+      setIsSidebarOpen(true);
     } catch (err) { 
       setError(err instanceof Error ? err.message : 'Error comparing documents'); 
       console.error('Comparison error:', err);
     } finally { 
       setLoading(false); 
     } 
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+  };
+
+  const handleFilterChange = (filters: FilterOptions) => {
+    setFilterOptions(filters);
+  };
+
+  const handleGenerateReport = async (options: ReportOptions): Promise<void> => {
+    if (!comparison || !doc1 || !doc2) {
+      setError('No comparison data available for report generation');
+      return;
+    }
+    
+    try {
+      await generateReport(comparison, doc1.name, doc2.name, options);
+    } catch (error) {
+      console.error('Report generation error:', error);
+      setError('Error generating report');
+    }
+  };
+
+  const handleMilestoneSave = (updatedMilestones: Milestone[]) => {
+    // Verificar tipos duplicados y mantener solo el más reciente
+    const seenTypes = new Set<MilestoneType>();
+    const uniqueMilestones: Milestone[] = [];
+    
+    // Ordenar por fecha para procesar primero los más recientes
+    const sortedByDate = [...updatedMilestones].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    
+    // Mantener solo un hito por tipo (el más reciente)
+    sortedByDate.forEach(milestone => {
+      if (!seenTypes.has(milestone.type)) {
+        seenTypes.add(milestone.type);
+        uniqueMilestones.push(milestone);
+      }
+    });
+    
+    // Ordenar los hitos según el orden natural del proceso legislativo
+    const milestoneOrder: MilestoneType[] = [
+      'radicacion',
+      'comision_primera',
+      'comision_segunda',
+      'plenaria',
+      'conciliacion',
+      'sancion'
+    ];
+    
+    const finalMilestones = [...uniqueMilestones].sort((a, b) => {
+      const aIndex = milestoneOrder.indexOf(a.type);
+      const bIndex = milestoneOrder.indexOf(b.type);
+      return aIndex - bIndex;
+    });
+    
+    setMilestones(finalMilestones);
+    
+    // Actualizar la etapa actual basada en el hito más avanzado
+    // (esto asegura que la barra de progreso se muestre correctamente)
+    let furthestStage: MilestoneType | undefined;
+    let furthestIndex = -1;
+    
+    finalMilestones.forEach(milestone => {
+      const index = milestoneOrder.indexOf(milestone.type);
+      if (index > furthestIndex) {
+        furthestIndex = index;
+        furthestStage = milestone.type;
+      }
+    });
+    
+    // Si hay hitos, actualizar la etapa actual con el más avanzado
+    if (furthestStage) {
+      setCurrentStage(furthestStage);
+      // Seleccionar el hito correspondiente al stage más avanzado
+      const furthestMilestone = finalMilestones.find(m => m.type === furthestStage);
+      if (furthestMilestone) {
+        setCurrentMilestoneId(furthestMilestone.id);
+      }
+    }
+  };
+
+  const handleMilestoneClick = (milestone: Milestone) => {
+    setCurrentMilestoneId(milestone.id);
+    setCurrentStage(milestone.type);
+    
+    // Si tiene un documentVersion asociado, cargarlo
+    if (milestone.documentVersion) {
+      // En una aplicación real, aquí cargarías el documento guardado
+      // asociado con este hito desde la base de datos
+      console.log(`Cargando documento versión: ${milestone.documentVersion}`);
+      
+      // Buscar en el historial la entrada relacionada con este hito
+      const historyEntry = historyEntries.find(entry => 
+        entry.documentVersionId === milestone.documentVersion ||
+        entry.description.includes(milestone.type)
+      );
+      
+      if (historyEntry) {
+        // Seleccionar esta entrada en el historial
+        setSelectedHistoryEntryId(historyEntry.id);
+        
+        // En una app real, cargarías los documentos relacionados
+        // y mostrarías la comparación guardada
+        console.log(`Mostrando comparación guardada del hito: ${milestone.title}`);
+        
+        // Podríamos incluso abrir el sidebar en la pestaña de historial
+        setActiveTab('history');
+        setIsSidebarOpen(true);
+      }
+    }
+  };
+
+  const handleSelectHistoryEntry = (entry: HistoryEntry) => {
+    setSelectedHistoryEntryId(entry.id);
+    // In a real app, you'd load the document versions associated with this history entry
+    console.log(`Loading document versions for history entry: ${entry.id}`);
+  };
+  
+  const handleAssignMilestone = (milestoneId: string, milestoneType: MilestoneType) => {
+    if (!milestoneId || !milestoneType) {
+      console.error("No se ha seleccionado un hito válido");
+      return;
+    }
+    
+    if (doc1 && doc2 && comparison) {
+      // Generar un ID único para esta versión de documento
+      const documentVersionId = `version-${Date.now()}`;
+      
+      // En una aplicación real, aquí guardarías los documentos
+      // y la comparación en la base de datos
+      console.log(`Guardando documentos con ID: ${documentVersionId}`);
+      
+      // Obtener el orden de los hitos del proceso legislativo
+      const milestoneOrder: MilestoneType[] = [
+        'radicacion',
+        'comision_primera',
+        'comision_segunda',
+        'plenaria',
+        'conciliacion',
+        'sancion'
+      ];
+      
+      // Verificar si ya existe un hito de este tipo
+      const existingMilestoneIndex = milestones.findIndex(m => m.type === milestoneType);
+      
+      let updatedMilestones: Milestone[];
+      
+      if (existingMilestoneIndex >= 0) {
+        // Actualizar el hito existente
+        updatedMilestones = milestones.map(milestone => 
+          milestone.type === milestoneType 
+            ? { ...milestone, documentVersion: documentVersionId, date: new Date().toISOString().split('T')[0] }
+            : milestone
+        );
+      } else {
+        // Crear un nuevo hito con el tipo seleccionado
+        const newMilestone: Milestone = {
+          id: `milestone-${Date.now()}`,
+          type: milestoneType,
+          title: milestoneLabels[milestoneType] || milestoneType,
+          date: new Date().toISOString().split('T')[0],
+          description: `Documento revisado en etapa: ${milestoneType}`,
+          documentVersion: documentVersionId
+        };
+        
+        // Añadir el nuevo hito a la lista
+        updatedMilestones = [...milestones, newMilestone];
+      }
+      
+      // Establecer el hito actual como el recién creado/actualizado
+      const currentMilestone = updatedMilestones.find(m => m.type === milestoneType);
+      if (currentMilestone) {
+        setCurrentMilestoneId(currentMilestone.id);
+        setCurrentStage(milestoneType);
+      }
+      
+      // Ordenar los hitos según el proceso legislativo
+      const sortedMilestones = [...updatedMilestones].sort((a, b) => {
+        const aIndex = milestoneOrder.indexOf(a.type);
+        const bIndex = milestoneOrder.indexOf(b.type);
+        return aIndex - bIndex;
+      });
+      
+      // Actualizar la lista de hitos
+      setMilestones(sortedMilestones);
+      
+      // Add this assignment to history 
+      const newHistoryEntry: HistoryEntry = {
+        id: `history-${Date.now()}`,
+        date: new Date().toISOString(),
+        author: 'Usuario Actual',
+        type: milestoneType === 'plenaria' ? 'plenaria' : 'comision',
+        description: `Documento asignado al hito: ${milestoneType}`,
+        changes: {
+          additions: comparison.differences.filter(d => d.type === 'addition').length,
+          deletions: comparison.differences.filter(d => d.type === 'deletion').length,
+          modifications: comparison.differences.filter(d => d.type === 'modification').length,
+        },
+        documentVersionId: documentVersionId,
+      };
+      
+      setHistoryEntries(prev => [newHistoryEntry, ...prev]);
+    }
   };
 
   const renderDocument = (doc: FileInfo | null, isOriginal = true) => {
@@ -133,8 +510,13 @@ export default function Home() {
       );
     }
 
-    // Improved filter to pick only the diffs relevant for this panel
-    const relevant = comparison.differences.filter(d => {
+    // Use filtered differences if available, otherwise use all differences
+    const differencesToUse = filteredDifferences.length > 0 
+      ? filteredDifferences 
+      : comparison.differences;
+
+    // Filter for the relevant differences for this panel
+    const relevant = differencesToUse.filter(d => {
       if (isOriginal) {
         return d.type === 'deletion'; // Only show deletions in document 1
       } else {
@@ -142,7 +524,7 @@ export default function Home() {
       }
     });
 
-    // Improved sorting logic for more accurate rendering
+    // Sorting logic for accurate rendering
     const sorted = [...relevant].sort((a, b) => {
       const aPos = typeof a.startIndex === 'number' ? a.startIndex : doc.text.indexOf(isOriginal && a.referenceContent ? a.referenceContent : a.content);
       const bPos = typeof b.startIndex === 'number' ? b.startIndex : doc.text.indexOf(isOriginal && b.referenceContent ? b.referenceContent : b.content);
@@ -230,6 +612,20 @@ export default function Home() {
     return null;
   }
 
+  // Get all unique article IDs from the comparison for filtering
+  const getArticleIds = () => {
+    if (!comparison) return [];
+    
+    const articleIds = new Set<string>();
+    comparison.differences.forEach(diff => {
+      const articleMatch = diff.location.match(/Art(?:ículo|icle)\s+(\d+)/i);
+      const articleId = articleMatch ? articleMatch[1] : 'other';
+      articleIds.add(articleId);
+    });
+    
+    return Array.from(articleIds);
+  };
+
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 p-6">
       {/* Logo in the top right corner */}
@@ -257,184 +653,236 @@ export default function Home() {
       <Sidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
-        apiKey={apiKey}
-        setApiKey={setApiKey}
-        temperature={temperature}
-        setTemperature={setTemperature}
+        milestones={milestones}
+        onSaveMilestones={handleMilestoneSave}
+        historyEntries={historyEntries}
+        onSelectHistoryEntry={handleSelectHistoryEntry}
+        selectedHistoryEntryId={selectedHistoryEntryId}
+        comparisonResult={comparison || undefined}
+        doc1Name={doc1?.name}
+        doc2Name={doc2?.name}
+        onGenerateReport={handleGenerateReport}
+        activeTab={activeTab}
+        onTabChange={(tab) => setActiveTab(tab)}
       />
 
-      <main className="flex flex-col md:flex-row h-[calc(100vh-6rem)] mx-auto max-w-[1400px] gap-6 overflow-hidden bg-white/10 backdrop-blur-md rounded-xl border-2 border-blue-400/50 border-white/10 shadow-xl p-6 relative before:absolute before:inset-0 before:rounded-xl before:border-2 before:border-blue-400/20 before:animate-pulse">
-        {/* Left Document Panel */}
-        <div className="flex-[1.2] flex flex-col gap-4 min-h-0 w-full min-w-0">
-          <div className="flex items-center gap-2 shrink-0">
-            <Button 
-              onClick={() => document.getElementById('doc1-upload')?.click()}
-              variant="outline"
-              className="w-full bg-white/80 backdrop-blur-sm hover:bg-white"
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              Subir Documento 1
-            </Button>
-            {doc1 && (
-              <div className="relative group">
-                <span className="text-sm text-white truncate max-w-[200px] bg-black/20 px-2 py-1 rounded-md">
-                  {truncateFileName(doc1.name)}
-                </span>
-                <button
-                  onClick={() => {
-                    setDoc1(null);
-                    setComparison(null);
-                  }}
-                  className="hidden group-hover:flex absolute -right-2 -top-2 bg-red-500 text-white rounded-full w-5 h-5 items-center justify-center text-xs hover:bg-red-600 transition-colors"
-                  title="Eliminar documento"
-                >
-                  ×
-                </button>
-              </div>
-            )}
-          </div>
-          <input
-            id="doc1-upload"
-            type="file"
-            accept=".txt,.pdf"
-            onChange={(e) => e.target.files?.[0] && handleFileUpload(1, e.target.files[0])}
-            className="hidden"
+      <main className="flex flex-col h-[calc(100vh-6rem)] mx-auto max-w-[1400px] gap-6 overflow-hidden bg-white/10 backdrop-blur-md rounded-xl border-2 border-blue-400/50 border-white/10 shadow-xl p-6 relative before:absolute before:inset-0 before:rounded-xl before:border-2 before:border-blue-400/20 before:animate-pulse">
+        {/* Timeline Section */}
+        <div className="w-full pb-4 pt-2">
+          <TimelineCompact 
+            milestones={milestones}
+            onMilestoneClick={handleMilestoneClick}
+            currentMilestoneId={currentMilestoneId}
+            currentStage={currentStage}
           />
-          <Card className="flex-1 min-h-0 max-h-[calc(100vh-12rem)] bg-white/80 backdrop-blur-sm w-full">
-            <CardContent className="h-full overflow-auto text-gray-600 w-full">
-              {renderDocument(doc1, true)}
-            </CardContent>
-          </Card>
         </div>
-
-        {/* Right Document Panel */}
-        <div className="flex-[1.2] flex flex-col gap-4 min-h-0 w-full min-w-0">
-          <div className="flex items-center gap-2 shrink-0">
-            <Button 
-              onClick={() => document.getElementById('doc2-upload')?.click()}
-              variant="outline"
-              className="w-full bg-white/80 backdrop-blur-sm hover:bg-white"
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              Subir Documento 2
-            </Button>
-            {doc2 && (
-              <div className="relative group">
-                <span className="text-sm text-white truncate max-w-[200px] bg-black/20 px-2 py-1 rounded-md">
-                  {truncateFileName(doc2.name)}
-                </span>
-                <button
-                  onClick={() => {
-                    setDoc2(null);
-                    setComparison(null);
-                  }}
-                  className="hidden group-hover:flex absolute -right-2 -top-2 bg-red-500 text-white rounded-full w-5 h-5 items-center justify-center text-xs hover:bg-red-600 transition-colors"
-                  title="Eliminar documento"
-                >
-                  ×
-                </button>
-              </div>
-            )}
+        
+        {/* Search and Filter Section */}
+        {comparison && (
+          <div className="w-full flex justify-between items-center">
+            <div className="flex-1">
+              <SearchFilters 
+                onSearch={handleSearch}
+                onFilterChange={handleFilterChange}
+                articleCount={getArticleIds().length}
+              />
+            </div>
+            
+            <div className="ml-4">
+              <Button
+                onClick={() => {
+                  setActiveTab('timeline');
+                  setIsSidebarOpen(true);
+                }}
+                variant="outline"
+                className="flex items-center border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100"
+              >
+                <Flag className="w-4 h-4 mr-2" />
+                Asignar a Hito
+              </Button>
+            </div>
           </div>
-          <input
-            id="doc2-upload"
-            type="file"
-            accept=".txt,.pdf"
-            onChange={(e) => e.target.files?.[0] && handleFileUpload(2, e.target.files[0])}
-            className="hidden"
-          />
-          <Card className="flex-1 min-h-0 max-h-[calc(100vh-12rem)] bg-white/80 backdrop-blur-sm w-full">
-            <CardContent className="h-full overflow-auto text-gray-600 w-full">
-              {renderDocument(doc2, false)}
-            </CardContent>
-          </Card>
-        </div>
+        )}
+        
+        <div className="flex flex-col md:flex-row h-full gap-6 overflow-hidden">
+          {/* Left Document Panel */}
+          <div className="flex-[1.2] flex flex-col gap-4 min-h-0 w-full min-w-0">
+            <div className="flex items-center gap-2 shrink-0">
+              <Button 
+                onClick={() => document.getElementById('doc1-upload')?.click()}
+                variant="outline"
+                className="w-full bg-white/80 backdrop-blur-sm hover:bg-white"
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                Subir Documento 1
+              </Button>
+              {doc1 && (
+                <div className="relative group">
+                  <span className="text-sm text-white truncate max-w-[200px] bg-black/20 px-2 py-1 rounded-md">
+                    {truncateFileName(doc1.name)}
+                  </span>
+                  <button
+                    onClick={() => {
+                      setDoc1(null);
+                      setComparison(null);
+                    }}
+                    className="hidden group-hover:flex absolute -right-2 -top-2 bg-red-500 text-white rounded-full w-5 h-5 items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                    title="Eliminar documento"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+            </div>
+            <input
+              id="doc1-upload"
+              type="file"
+              accept=".txt,.pdf"
+              onChange={(e) => e.target.files?.[0] && handleFileUpload(1, e.target.files[0])}
+              className="hidden"
+            />
+            <Card className="flex-1 min-h-0 max-h-[calc(100vh-12rem)] bg-white/80 backdrop-blur-sm w-full">
+              <CardContent className="h-full overflow-auto text-gray-600 w-full">
+                {renderDocument(doc1, true)}
+              </CardContent>
+            </Card>
+          </div>
 
-        {/* Analysis Panel */}
-        <div className="flex-[1] flex flex-col gap-4 min-h-0 max-w-md w-full min-w-0">
-          <Button 
-            onClick={handleComparison} 
-            disabled={!doc1 || !doc2 || loading}
-            variant="default"
-            className="w-full shrink-0 bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
-          >
-            {loading && (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {['Comparando', 'Pensando', 'Analizando'][Math.floor(Math.random() * 3)]}...
-              </>
-            )}
-            {!loading && 'Comparar Documentos'}
-          </Button>
+          {/* Right Document Panel */}
+          <div className="flex-[1.2] flex flex-col gap-4 min-h-0 w-full min-w-0">
+            <div className="flex items-center gap-2 shrink-0">
+              <Button 
+                onClick={() => document.getElementById('doc2-upload')?.click()}
+                variant="outline"
+                className="w-full bg-white/80 backdrop-blur-sm hover:bg-white"
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                Subir Documento 2
+              </Button>
+              {doc2 && (
+                <div className="relative group">
+                  <span className="text-sm text-white truncate max-w-[200px] bg-black/20 px-2 py-1 rounded-md">
+                    {truncateFileName(doc2.name)}
+                  </span>
+                  <button
+                    onClick={() => {
+                      setDoc2(null);
+                      setComparison(null);
+                    }}
+                    className="hidden group-hover:flex absolute -right-2 -top-2 bg-red-500 text-white rounded-full w-5 h-5 items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                    title="Eliminar documento"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+            </div>
+            <input
+              id="doc2-upload"
+              type="file"
+              accept=".txt,.pdf"
+              onChange={(e) => e.target.files?.[0] && handleFileUpload(2, e.target.files[0])}
+              className="hidden"
+            />
+            <Card className="flex-1 min-h-0 max-h-[calc(100vh-12rem)] bg-white/80 backdrop-blur-sm w-full">
+              <CardContent className="h-full overflow-auto text-gray-600 w-full">
+                {renderDocument(doc2, false)}
+              </CardContent>
+            </Card>
+          </div>
 
-          <Card className="flex-1 min-h-0 max-h-[calc(100vh-12rem)] bg-white/80 backdrop-blur-sm">
-            <CardContent className="h-full overflow-auto">
-              <div className="space-y-4">
-                {(comparison || error) && (
-                  <h3 className="font-semibold text-gray-800">Análisis</h3>
-                )}
-                {error && (
-                  <div className="text-red-500 bg-red-50 p-3 rounded-lg">
-                    {error}
-                  </div>
-                )}
-                {comparison && (
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="font-medium mb-2 text-gray-800">Resumen</h4>
-                      <p className="text-gray-800 text-sm">
-                        {typeof comparison.summary === 'string' 
-                          ? comparison.summary 
-                          : typeof comparison.summary === 'object' && comparison.summary !== null 
-                            ? Object.values(comparison.summary).filter(v => typeof v === 'string').join(' ')
-                            : 'Resumen no disponible'}
-                      </p>
+          {/* Analysis Panel */}
+          <div className="flex-[1] flex flex-col gap-4 min-h-0 max-w-md w-full min-w-0">
+            <Button 
+              onClick={handleComparison} 
+              disabled={!doc1 || !doc2 || loading}
+              variant="default"
+              className="w-full shrink-0 bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
+            >
+              {loading && (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {['Comparando', 'Pensando', 'Analizando'][Math.floor(Math.random() * 3)]}...
+                </>
+              )}
+              {!loading && 'Comparar Documentos'}
+            </Button>
+
+            <Card className="flex-1 min-h-0 max-h-[calc(100vh-12rem)] bg-white/80 backdrop-blur-sm">
+              <CardContent className="h-full overflow-auto">
+                <div className="space-y-4">
+                  {(comparison || error) && (
+                    <h3 className="font-semibold text-gray-800">Análisis</h3>
+                  )}
+                  {error && (
+                    <div className="text-red-500 bg-red-50 p-3 rounded-lg">
+                      {error}
                     </div>
-
-                    {comparison.impactAnalysis && (
+                  )}
+                  {comparison && (
+                    <div className="space-y-4">
                       <div>
-                        <h4 className="font-medium mb-2 text-gray-800">Análisis de Impacto</h4>
-                        <p className="text-gray-800 text-sm text-justify">{comparison.impactAnalysis}</p>
+                        <h4 className="font-medium mb-2 text-gray-800">Resumen</h4>
+                        <p className="text-gray-800 text-sm">
+                          {typeof comparison.summary === 'string' 
+                            ? comparison.summary 
+                            : typeof comparison.summary === 'object' && comparison.summary !== null 
+                              ? Object.values(comparison.summary).filter(v => typeof v === 'string').join(' ')
+                              : 'Resumen no disponible'}
+                        </p>
                       </div>
-                    )}
 
-                    <div>
-                      <h4 className="font-medium mb-2 text-gray-800">Diferencias Detalladas</h4>
-                      <div className="space-y-3">
-                        {comparison.differences.map((diff, index) => (
-                          <div 
-                            key={index} 
-                            className="p-3 bg-white rounded-lg border border-gray-200 shadow-sm"
-                          >
-                            <div className={`text-sm font-medium mb-1 ${
-                              diff.type === 'addition' ? 'text-green-600' :
-                              diff.type === 'deletion' ? 'text-red-600' :
-                              'text-yellow-600'
-                            }`}>
-                              {diff.type === 'addition' ? 'Adición' :
-                               diff.type === 'deletion' ? 'Eliminación' :
-                               'Modificación'}
+                      {comparison.impactAnalysis && (
+                        <div>
+                          <h4 className="font-medium mb-2 text-gray-800">Análisis de Impacto</h4>
+                          <p className="text-gray-800 text-sm text-justify">{comparison.impactAnalysis}</p>
+                        </div>
+                      )}
+
+                      <div>
+                        <h4 className="font-medium mb-2 text-gray-800">Diferencias Detalladas</h4>
+                        <div className="space-y-3">
+                          {(filteredDifferences.length > 0 ? filteredDifferences : comparison.differences).map((diff, index) => (
+                            <div 
+                              key={index} 
+                              className="p-3 bg-white rounded-lg border border-gray-200 shadow-sm"
+                            >
+                              <div className={`text-sm font-medium mb-1 ${
+                                diff.type === 'addition' ? 'text-green-600' :
+                                diff.type === 'deletion' ? 'text-red-600' :
+                                'text-yellow-600'
+                              }`}>
+                                {diff.type === 'addition' ? 'Adición' :
+                                 diff.type === 'deletion' ? 'Eliminación' :
+                                 'Modificación'}
+                              </div>
+                              <div className="text-sm mb-1 text-gray-800">
+                                <span className="font-medium">Contenido:</span> &quot;{diff.content}&quot;
+                              </div>
+                              <div className="text-sm mb-1 text-gray-800">
+                                <span className="font-medium">Ubicación:</span> {diff.location}
+                              </div>
+                              <div className="text-sm text-gray-800">
+                                <span className="font-medium">Importancia:</span> {diff.significance}
+                              </div>
                             </div>
-                            <div className="text-sm mb-1 text-gray-800">
-                              <span className="font-medium">Contenido:</span> &quot;{diff.content}&quot;
+                          ))}
+                          
+                          {filteredDifferences.length === 0 && comparison.differences.length > 0 && searchQuery && (
+                            <div className="text-center text-gray-500 py-3">
+                              No se encontraron diferencias que coincidan con la búsqueda.
                             </div>
-                            <div className="text-sm mb-1 text-gray-800">
-                              <span className="font-medium">Ubicación:</span> {diff.location}
-                            </div>
-                            <div className="text-sm text-gray-800">
-                              <span className="font-medium">Importancia:</span> {diff.significance}
-                            </div>
-                          </div>
-                        ))}
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </main>
     </div>
-);
+  );
 }

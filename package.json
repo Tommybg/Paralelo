@@ -16,6 +16,9 @@
     "@radix-ui/react-slot": "^1.1.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "docx": "^8.2.2",
+    "file-saver": "^2.0.5",
+    "jspdf": "^2.5.1",
     "lucide-react": "^0.473.0",
     "next": "^15.1.6",
     "openai": "^4.79.1",
@@ -24,7 +27,8 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "shadcn-ui": "^0.9.4",
-    "tailwind-merge": "^2.6.0"
+    "tailwind-merge": "^2.6.0",
+    "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -32,6 +36,7 @@
     "@types/pdfjs-dist": "^2.10.377",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/file-saver": "^2.0.5",
     "autoprefixer": "^10.4.20",
     "eslint": "^9",
     "eslint-config-next": "15.1.5",
