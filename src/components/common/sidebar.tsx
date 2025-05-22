@@ -62,7 +62,7 @@ export function Sidebar({
     >
       <div className="flex flex-col h-full">
         {/* Header */}
-        <div className="bg-gray-800 text-white px-6 py-4 flex justify-between items-center">
+        <div className="bg-blue-600/20 backdrop-blur-md text-black px-6 py-4 flex justify-between items-center">
           <h2 className="text-xl font-semibold">LegisCheck</h2>
           <Button variant="ghost" size="icon" onClick={onClose} className="text-white hover:bg-gray-700">
             <X className="h-5 w-5" />

@@ -410,6 +410,10 @@ export default function Home() {
       return;
     }
     
+    // Assign the current comparison to this milestone
+    setCurrentMilestoneId(milestoneId);
+    setCurrentStage(milestoneType);
+    
     if (doc1 && doc2 && comparison) {
       // Generar un ID único para esta versión de documento
       const documentVersionId = `version-${Date.now()}`;
@@ -418,59 +422,14 @@ export default function Home() {
       // y la comparación en la base de datos
       console.log(`Guardando documentos con ID: ${documentVersionId}`);
       
-      // Obtener el orden de los hitos del proceso legislativo
-      const milestoneOrder: MilestoneType[] = [
-        'radicacion',
-        'comision_primera',
-        'comision_segunda',
-        'plenaria',
-        'conciliacion',
-        'sancion'
-      ];
+      // Actualizar el hito seleccionado para asociarlo con esta versión
+      const updatedMilestones = milestones.map(milestone => 
+        milestone.id === milestoneId 
+          ? { ...milestone, documentVersion: documentVersionId }
+          : milestone
+      );
       
-      // Verificar si ya existe un hito de este tipo
-      const existingMilestoneIndex = milestones.findIndex(m => m.type === milestoneType);
-      
-      let updatedMilestones: Milestone[];
-      
-      if (existingMilestoneIndex >= 0) {
-        // Actualizar el hito existente
-        updatedMilestones = milestones.map(milestone => 
-          milestone.type === milestoneType 
-            ? { ...milestone, documentVersion: documentVersionId, date: new Date().toISOString().split('T')[0] }
-            : milestone
-        );
-      } else {
-        // Crear un nuevo hito con el tipo seleccionado
-        const newMilestone: Milestone = {
-          id: `milestone-${Date.now()}`,
-          type: milestoneType,
-          title: milestoneLabels[milestoneType] || milestoneType,
-          date: new Date().toISOString().split('T')[0],
-          description: `Documento revisado en etapa: ${milestoneType}`,
-          documentVersion: documentVersionId
-        };
-        
-        // Añadir el nuevo hito a la lista
-        updatedMilestones = [...milestones, newMilestone];
-      }
-      
-      // Establecer el hito actual como el recién creado/actualizado
-      const currentMilestone = updatedMilestones.find(m => m.type === milestoneType);
-      if (currentMilestone) {
-        setCurrentMilestoneId(currentMilestone.id);
-        setCurrentStage(milestoneType);
-      }
-      
-      // Ordenar los hitos según el proceso legislativo
-      const sortedMilestones = [...updatedMilestones].sort((a, b) => {
-        const aIndex = milestoneOrder.indexOf(a.type);
-        const bIndex = milestoneOrder.indexOf(b.type);
-        return aIndex - bIndex;
-      });
-      
-      // Actualizar la lista de hitos
-      setMilestones(sortedMilestones);
+      setMilestones(updatedMilestones);
       
       // Add this assignment to history 
       const newHistoryEntry: HistoryEntry = {
@@ -627,17 +586,25 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 p-6">
-      {/* Logo in the top right corner */}
-      <div className="fixed top-1 right-2 z-50">
+    <div className="min-h-screen w-full bg-white p-6">
+      
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 z-50 flex gap-6 items-center mt-0">
         <Image 
           src="/logo_nobg.png" 
           alt="LegisCheck Logo" 
-          width={110} 
+          width={105} 
+          height={35}
+          priority
+        />
+        <Image
+          src="/logo_govlab.png"
+          alt="Second Logo"
+          width={120}
           height={30}
+          priority
         />
       </div>
-      
+          
       <button
         className="fixed top-2 left-4 backdrop-blur-sm hover:bg-black/20 z-50 w-12 h-12 rounded-xl flex items-center justify-center"
         onClick={() => setIsSidebarOpen(true)}
@@ -666,7 +633,7 @@ export default function Home() {
         onTabChange={(tab) => setActiveTab(tab)}
       />
 
-      <main className="flex flex-col h-[calc(100vh-6rem)] mx-auto max-w-[1400px] gap-6 overflow-hidden bg-white/10 backdrop-blur-md rounded-xl border-2 border-blue-400/50 border-white/10 shadow-xl p-6 relative before:absolute before:inset-0 before:rounded-xl before:border-2 before:border-blue-400/20 before:animate-pulse">
+      <main className="flex flex-col h-[calc(100vh-6rem)] mx-auto max-w-[1400px] gap-6 overflow-hidden bg-blue-600/20 backdrop-blur-md rounded-xl border-2 border-blue-400/30 shadow-xl p-6 relative before:absolute before:inset-0 before:rounded-xl before:border-2 before:border-blue-400/20 before:animate-pulse">
         {/* Timeline Section */}
         <div className="w-full pb-4 pt-2">
           <TimelineCompact 
@@ -688,14 +655,14 @@ export default function Home() {
               />
             </div>
             
-            <div className="ml-4">
+            <div className="ml-2 -translate-y-2">
               <Button
                 onClick={() => {
                   setActiveTab('timeline');
                   setIsSidebarOpen(true);
                 }}
                 variant="outline"
-                className="flex items-center border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100"
+                className="flex items-center bg-blue-50 text-blue-700 hover:bg-blue-100"
               >
                 <Flag className="w-4 h-4 mr-2" />
                 Asignar a Hito
@@ -711,14 +678,14 @@ export default function Home() {
               <Button 
                 onClick={() => document.getElementById('doc1-upload')?.click()}
                 variant="outline"
-                className="w-full bg-white/80 backdrop-blur-sm hover:bg-white"
+                className="w-full bg-white/90 backdrop-blur-sm hover:bg-white border border-gray-200"
               >
                 <Upload className="mr-2 h-4 w-4" />
                 Subir Documento 1
               </Button>
               {doc1 && (
                 <div className="relative group">
-                  <span className="text-sm text-white truncate max-w-[200px] bg-black/20 px-2 py-1 rounded-md">
+                  <span className="text-sm text-white truncate max-w-[200px] bg-blue-600 px-2 py-1 rounded-md">
                     {truncateFileName(doc1.name)}
                   </span>
                   <button
@@ -741,7 +708,7 @@ export default function Home() {
               onChange={(e) => e.target.files?.[0] && handleFileUpload(1, e.target.files[0])}
               className="hidden"
             />
-            <Card className="flex-1 min-h-0 max-h-[calc(100vh-12rem)] bg-white/80 backdrop-blur-sm w-full">
+            <Card className="flex-1 min-h-0 max-h-[calc(100vh-12rem)] bg-gray-50/90 backdrop-blur-sm w-full border border-gray-200">
               <CardContent className="h-full overflow-auto text-gray-600 w-full">
                 {renderDocument(doc1, true)}
               </CardContent>
@@ -761,7 +728,7 @@ export default function Home() {
               </Button>
               {doc2 && (
                 <div className="relative group">
-                  <span className="text-sm text-white truncate max-w-[200px] bg-black/20 px-2 py-1 rounded-md">
+                  <span className="text-sm text-white truncate max-w-[200px] bg-blue-600 px-2 py-1 rounded-md">
                     {truncateFileName(doc2.name)}
                   </span>
                   <button
@@ -784,7 +751,7 @@ export default function Home() {
               onChange={(e) => e.target.files?.[0] && handleFileUpload(2, e.target.files[0])}
               className="hidden"
             />
-            <Card className="flex-1 min-h-0 max-h-[calc(100vh-12rem)] bg-white/80 backdrop-blur-sm w-full">
+            <Card className="flex-1 min-h-0 max-h-[calc(100vh-12rem)] bg-gray-50/90 backdrop-blur-sm w-full border border-gray-200">
               <CardContent className="h-full overflow-auto text-gray-600 w-full">
                 {renderDocument(doc2, false)}
               </CardContent>
@@ -808,7 +775,7 @@ export default function Home() {
               {!loading && 'Comparar Documentos'}
             </Button>
 
-            <Card className="flex-1 min-h-0 max-h-[calc(100vh-12rem)] bg-white/80 backdrop-blur-sm">
+            <Card className="flex-1 min-h-0 max-h-[calc(100vh-12rem)] bg-gray-50/90 backdrop-blur-sm border border-gray-200">
               <CardContent className="h-full overflow-auto">
                 <div className="space-y-4">
                   {(comparison || error) && (

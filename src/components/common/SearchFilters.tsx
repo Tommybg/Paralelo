@@ -80,7 +80,7 @@ export function SearchFilters({ onSearch, onFilterChange, articleCount }: Search
         <Button 
           type="button" 
           variant="outline"
-          className={`border ${showFilters ? 'bg-blue-50 border-blue-300' : 'bg-white'} flex items-center`}
+          className={`${showFilters ? 'bg-blue-50' : 'bg-white'} flex items-center`}
           onClick={() => setShowFilters(!showFilters)}
         >
           <Filter className="w-4 h-4 mr-1" />

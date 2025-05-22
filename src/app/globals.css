@@ -2,15 +2,53 @@
 @tailwind components;
 @tailwind utilities;
 
+/* VARIABLES CSS ACTUALIZADAS - Esquema blanco, azul, gris claro */
+
 :root {
-  --background: linear-gradient(to bottom right, #1e3a8a, #1e40af, #1d4ed8);
-  --foreground: #ffffff;
+  /* Fondo principal - Blanco limpio */
+  --background: #ffffff;
+  
+  /* Texto principal - Gris oscuro para buen contraste */
+  --foreground: #1f2937;
+  
+  /* Variables adicionales para consistencia */
+  --primary: #2563eb;           /* Azul principal */
+  --primary-foreground: #ffffff; /* Texto sobre azul */
+  --secondary: #f9fafb;         /* Gris muy claro */
+  --secondary-foreground: #374151; /* Texto sobre gris claro */
+  --accent: #3b82f6;            /* Azul de acento */
+  --accent-foreground: #ffffff; /* Texto sobre azul de acento */
+  --muted: #f3f4f6;             /* Gris claro para contenedores */
+  --muted-foreground: #6b7280;  /* Gris medio */
+  --border: #e5e7eb;            /* Bordes grises claros */
+  --input: #f9fafb;             /* Fondo de inputs */
+  --ring: #3b82f6;              /* Color de focus */
+  
+  /* Nuevas variables para el esquema */
+  --container-bg: rgba(37, 99, 235, 0.1); /* Azul translúcido para contenedor principal */
+  --document-bg: rgba(249, 250, 251, 0.9); /* Gris claro para documentos */
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: linear-gradient(to bottom right, #1e3a8a, #1e40af, #1d4ed8);
-    --foreground: #ffffff;
+    /* En modo oscuro, mantener legibilidad */
+    --background: #111827;
+    --foreground: #f9fafb;
+    
+    --primary: #3b82f6;
+    --primary-foreground: #ffffff;
+    --secondary: #1f2937;
+    --secondary-foreground: #f9fafb;
+    --accent: #60a5fa;
+    --accent-foreground: #1e293b;
+    --muted: #374151;
+    --muted-foreground: #d1d5db;
+    --border: #4b5563;
+    --input: #374151;
+    --ring: #60a5fa;
+    
+    --container-bg: rgba(59, 130, 246, 0.15);
+    --document-bg: rgba(55, 65, 81, 0.8);
   }
 }
 
