@@ -88,7 +88,7 @@ export function Timeline({ milestones, onMilestoneClick, currentMilestoneId, cur
         ></div>
         
         {/* Hitos */}
-        {displayMilestones.map((milestone, index) => {
+        {displayMilestones.map((milestone) => {
           const isActive = milestone.id === currentMilestoneId;
           const isCurrentOrPast = currentStage 
             ? milestoneOrder.indexOf(milestone.type) <= milestoneOrder.indexOf(currentStage)
@@ -104,7 +104,9 @@ export function Timeline({ milestones, onMilestoneClick, currentMilestoneId, cur
           return (
             <div 
               key={milestone.id}
-              className="relative z-10 flex flex-col items-center"
+              className={`relative flex items-center ${
+                milestone.id === currentMilestoneId ? 'z-10' : ''
+              }`}
               style={{ left: `${position}%`, position: 'absolute', transform: 'translateX(-50%)' }}
             >
               {/* Hito con icono de estado */}

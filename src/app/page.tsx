@@ -3,12 +3,12 @@
 import React, { useState, useEffect, JSX } from 'react';
 import { Card, CardContent } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
-import { Upload, Loader2, Search, X, Flag } from 'lucide-react';
+import { Upload, Loader2, Flag } from 'lucide-react';
 import { compareDocuments } from '@/lib/services/comparisonService';
-import type { ComparisonResult, DocumentVersion } from '@/types/comparison';
+import type { ComparisonResult } from '@/types/comparison';
 import { extractTextFromFile } from '@/lib/utils/Processor';
 import { Sidebar } from '@/components/common/sidebar';
-import { Timeline, TimelineCompact } from '@/components/common/Timeline';
+import { TimelineCompact } from '@/components/common/Timeline';
 import { SearchFilters, FilterOptions } from '@/components/common/SearchFilters';
 import { Milestone, MilestoneType } from '@/types/timeline';
 import { HistoryEntry } from '@/types/timeline';
@@ -31,16 +31,6 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
-  // Definir los nombres de visualización para los tipos de hitos
-  const milestoneLabels: Record<MilestoneType, string> = {
-    radicacion: 'Radicación',
-    comision_primera: 'Comisión Primera',
-    comision_segunda: 'Comisión Segunda',
-    plenaria: 'Plenaria',
-    conciliacion: 'Conciliación',
-    sancion: 'Sanción',
-  };
-  
   // New state for timeline, history, and search
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [currentMilestoneId, setCurrentMilestoneId] = useState<string | undefined>();
@@ -54,24 +44,12 @@ export default function Home() {
     authors: [],
   });
   const [filteredDifferences, setFilteredDifferences] = useState<ComparisonResult['differences']>([]);
-  const [documentVersions, setDocumentVersions] = useState<DocumentVersion[]>([]);
   
   // Estado para controlar el sidebar
   const [activeTab, setActiveTab] = useState<'timeline' | 'history' | 'reports'>('timeline');
 
   useEffect(() => {
     setMounted(true);
-    
-    
-    // Ordenarlos según el proceso legislativo natural
-    const milestoneOrder: MilestoneType[] = [
-      'radicacion',
-      'comision_primera',
-      'comision_segunda',
-      'plenaria',
-      'conciliacion',
-      'sancion'
-    ];
     
     // Initialize with some example history entries
     setHistoryEntries([
@@ -360,52 +338,6 @@ export default function Home() {
     setSelectedHistoryEntryId(entry.id);
     // In a real app, you'd load the document versions associated with this history entry
     console.log(`Loading document versions for history entry: ${entry.id}`);
-  };
-  
-  const handleAssignMilestone = (milestoneId: string, milestoneType: MilestoneType) => {
-    if (!milestoneId || !milestoneType) {
-      console.error("No se ha seleccionado un hito válido");
-      return;
-    }
-    
-    // Assign the current comparison to this milestone
-    setCurrentMilestoneId(milestoneId);
-    setCurrentStage(milestoneType);
-    
-    if (doc1 && doc2 && comparison) {
-      // Generar un ID único para esta versión de documento
-      const documentVersionId = `version-${Date.now()}`;
-      
-      // En una aplicación real, aquí guardarías los documentos
-      // y la comparación en la base de datos
-      console.log(`Guardando documentos con ID: ${documentVersionId}`);
-      
-      // Actualizar el hito seleccionado para asociarlo con esta versión
-      const updatedMilestones = milestones.map(milestone => 
-        milestone.id === milestoneId 
-          ? { ...milestone, documentVersion: documentVersionId }
-          : milestone
-      );
-      
-      setMilestones(updatedMilestones);
-      
-      // Add this assignment to history 
-      const newHistoryEntry: HistoryEntry = {
-        id: `history-${Date.now()}`,
-        date: new Date().toISOString(),
-        author: 'Usuario Actual',
-        type: milestoneType === 'plenaria' ? 'plenaria' : 'comision',
-        description: `Documento asignado al hito: ${milestoneType}`,
-        changes: {
-          additions: comparison.differences.filter(d => d.type === 'addition').length,
-          deletions: comparison.differences.filter(d => d.type === 'deletion').length,
-          modifications: comparison.differences.filter(d => d.type === 'modification').length,
-        },
-        documentVersionId: documentVersionId,
-      };
-      
-      setHistoryEntries(prev => [newHistoryEntry, ...prev]);
-    }
   };
 
   const renderDocument = (doc: FileInfo | null, isOriginal = true) => {
