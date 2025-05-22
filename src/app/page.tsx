@@ -62,30 +62,6 @@ export default function Home() {
   useEffect(() => {
     setMounted(true);
     
-    // Initialize with some example milestones en orden correcto
-    const initialMilestones: Milestone[] = [
-      {
-        id: 'milestone-1',
-        type: 'radicacion',
-        title: 'Radicación',
-        date: '2023-08-01',
-        description: 'Presentación inicial del proyecto',
-      },
-      {
-        id: 'milestone-2',
-        type: 'comision_primera',
-        title: 'Comisión Primera',
-        date: '2023-09-15',
-        description: 'Debate en comisión primera',
-      },
-      {
-        id: 'milestone-3',
-        type: 'plenaria',
-        title: 'Plenaria',
-        date: '2023-10-30',
-        description: 'Debate en plenaria',
-      },
-    ];
     
     // Ordenarlos según el proceso legislativo natural
     const milestoneOrder: MilestoneType[] = [
@@ -96,24 +72,6 @@ export default function Home() {
       'conciliacion',
       'sancion'
     ];
-    
-    const sortedMilestones = [...initialMilestones].sort((a, b) => {
-      const aIndex = milestoneOrder.indexOf(a.type);
-      const bIndex = milestoneOrder.indexOf(b.type);
-      return aIndex - bIndex;
-    });
-    
-    setMilestones(sortedMilestones);
-    
-    // Set initial current stage como el más avanzado
-    const furthestMilestone = sortedMilestones[sortedMilestones.length - 1];
-    if (furthestMilestone) {
-      setCurrentStage(furthestMilestone.type);
-      setCurrentMilestoneId(furthestMilestone.id);
-    } else {
-      // Default to radicacion if no milestones
-      setCurrentStage('radicacion');
-    }
     
     // Initialize with some example history entries
     setHistoryEntries([
@@ -588,18 +546,18 @@ export default function Home() {
   return (
     <div className="min-h-screen w-full bg-white p-6">
       
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 z-50 flex gap-6 items-center mt-0">
+      <div className="absolute top-0 right-3 z-50 flex gap-1 items-center mt-0">
         <Image 
           src="/logo_nobg.png" 
           alt="LegisCheck Logo" 
-          width={105} 
+          width={110} 
           height={35}
           priority
         />
         <Image
           src="/logo_govlab.png"
           alt="Second Logo"
-          width={120}
+          width={110}
           height={30}
           priority
         />
@@ -633,7 +591,7 @@ export default function Home() {
         onTabChange={(tab) => setActiveTab(tab)}
       />
 
-      <main className="flex flex-col h-[calc(100vh-6rem)] mx-auto max-w-[1400px] gap-6 overflow-hidden bg-blue-600/20 backdrop-blur-md rounded-xl border-2 border-blue-400/30 shadow-xl p-6 relative before:absolute before:inset-0 before:rounded-xl before:border-2 before:border-blue-400/20 before:animate-pulse">
+      <main className="flex flex-col h-[calc(100vh-6rem)] mx-auto max-w-[1400px] gap-6 overflow-hidden bg-blue-600/20 backdrop-blur-md rounded-xl border-2 border-blue-400/30 shadow-xl p-6 relative before:absolute before:inset-0 before:rounded-xl before:border-2 before:border-blue-400/20 before:animate-pulse flex-grow w-full">
         {/* Timeline Section */}
         <div className="w-full pb-4 pt-2">
           <TimelineCompact 

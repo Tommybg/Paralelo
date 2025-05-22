@@ -24,12 +24,12 @@ export function TimelineConfigurator({ milestones, onSave }: TimelineConfigurato
   };
 
   useEffect(() => {
-    // Actualizar el estado local cuando cambian los milestones externos
+    // Update local state when external milestones change
     setEditableMilestones(milestones);
   }, [milestones]);
 
   const handleAddMilestone = () => {
-    // Determinar el siguiente tipo de hito disponible
+    // Determine the next available milestone type
     const milestoneTypes: MilestoneType[] = [
       'radicacion',
       'comision_primera',
@@ -38,11 +38,11 @@ export function TimelineConfigurator({ milestones, onSave }: TimelineConfigurato
       'conciliacion',
       'sancion'
     ];
-    
-    // Verificar qué tipos ya están usados
+
+    // Check which types are already used
     const usedTypes = new Set(editableMilestones.map(m => m.type));
-    
-    // Encontrar el primer tipo no utilizado
+
+    // Find the first unused type
     let nextType: MilestoneType = 'radicacion';
     for (const type of milestoneTypes) {
       if (!usedTypes.has(type)) {
@@ -50,7 +50,7 @@ export function TimelineConfigurator({ milestones, onSave }: TimelineConfigurato
         break;
       }
     }
-    
+
     const newMilestone: Milestone = {
       id: `milestone-${Date.now()}`,
       type: nextType,
@@ -58,10 +58,11 @@ export function TimelineConfigurator({ milestones, onSave }: TimelineConfigurato
       date: new Date().toISOString().split('T')[0],
       description: '',
     };
-    
+
     setEditableMilestones([...editableMilestones, newMilestone]);
     setIsEditing(true);
     setErrorMessage(null);
+    console.log("Milestones after adding:", [...editableMilestones, newMilestone]);
   };
 
   const handleRemoveMilestone = (id: string) => {
@@ -70,18 +71,18 @@ export function TimelineConfigurator({ milestones, onSave }: TimelineConfigurato
   };
 
   const handleUpdateMilestone = (id: string, field: keyof Milestone, value: string) => {
-    // Si es una actualización de tipo, verificar duplicados
+    // If updating type, check for duplicates
     if (field === 'type') {
       const typeValue = value as MilestoneType;
       const hasTypeAlready = editableMilestones.some(m => m.id !== id && m.type === typeValue);
-      
+
       if (hasTypeAlready) {
         setErrorMessage(`Ya existe un hito de tipo ${milestoneLabels[typeValue]}.`);
         return;
       }
     }
-    
-    setEditableMilestones(editableMilestones.map(m => 
+
+    setEditableMilestones(editableMilestones.map(m =>
       m.id === id ? { ...m, [field]: value } : m
     ));
     setIsEditing(true);
@@ -89,43 +90,43 @@ export function TimelineConfigurator({ milestones, onSave }: TimelineConfigurato
   };
 
   const handleSave = () => {
-    // Verificar duplicados antes de guardar
+    // Check for duplicates before saving
     const typeCount = new Map<MilestoneType, number>();
     let hasDuplicates = false;
     let duplicateType = '';
-    
+
     for (const milestone of editableMilestones) {
       const count = (typeCount.get(milestone.type) || 0) + 1;
       typeCount.set(milestone.type, count);
-      
+
       if (count > 1) {
         hasDuplicates = true;
         duplicateType = milestoneLabels[milestone.type];
         break;
       }
     }
-    
+
     if (hasDuplicates) {
       setErrorMessage(`No se puede guardar: hay múltiples hitos de tipo ${duplicateType}.`);
       return;
     }
-    
-    // Ordenar por fecha natural del proceso legislativo
+
+    // Sort by natural legislative process order
     const milestoneOrder: MilestoneType[] = [
       'radicacion',
       'comision_primera',
       'comision_segunda',
-      'plenaria', 
+      'plenaria',
       'conciliacion',
       'sancion'
     ];
-    
+
     const sortedMilestones = [...editableMilestones].sort((a, b) => {
       const aIndex = milestoneOrder.indexOf(a.type);
       const bIndex = milestoneOrder.indexOf(b.type);
       return aIndex - bIndex;
     });
-    
+
     onSave(sortedMilestones);
     setIsEditing(false);
     setErrorMessage(null);
@@ -141,16 +142,16 @@ export function TimelineConfigurator({ milestones, onSave }: TimelineConfigurato
             size="sm"
             onClick={handleAddMilestone}
             className="text-xs px-2 py-1 h-auto"
-            disabled={Object.keys(milestoneLabels).length <= editableMilestones.length || 
-                      // Verificar si ya están todos los tipos de hitos disponibles
-                      Object.keys(milestoneLabels).every(type => 
+            disabled={Object.keys(milestoneLabels).length <= editableMilestones.length ||
+                      // Check if all milestone types are already used
+                      Object.keys(milestoneLabels).every(type =>
                         editableMilestones.some(m => m.type === type)
-                      )} 
+                      )}
           >
             <PlusCircle className="w-3 h-3 mr-1" />
             Añadir Hito
           </Button>
-          
+
           {isEditing && (
             <Button
               size="sm"
@@ -163,7 +164,7 @@ export function TimelineConfigurator({ milestones, onSave }: TimelineConfigurato
           )}
         </div>
       </div>
-      
+
       {errorMessage && (
         <div className="mb-4 px-3 py-2 bg-red-100 text-red-800 rounded-md text-xs">
           {errorMessage}
@@ -177,13 +178,13 @@ export function TimelineConfigurator({ milestones, onSave }: TimelineConfigurato
           </div>
         ) : (
           editableMilestones.map((milestone, index) => (
-            <div 
-              key={milestone.id} 
+            <div
+              key={milestone.id}
               className="border border-gray-200 rounded-lg p-3 bg-gray-50"
             >
               <div className="flex justify-between items-start mb-3">
                 <div className="text-sm font-medium text-gray-800">
-                  Hito {index + 1}
+                  Hito 
                 </div>
                 <Button
                   variant="ghost"
@@ -194,50 +195,50 @@ export function TimelineConfigurator({ milestones, onSave }: TimelineConfigurato
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
-              
+
               <div className="space-y-3">
                 {/* Type select */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
                     Tipo de Hito
                   </label>
-                  <select 
+                  <select
                     value={milestone.type}
                     onChange={(e) => handleUpdateMilestone(milestone.id, 'type', e.target.value as MilestoneType)}
-                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-gray-800"
                   >
                     {Object.entries(milestoneLabels).map(([value, label]) => (
                       <option key={value} value={value}>{label}</option>
                     ))}
                   </select>
                 </div>
-                
+
                 {/* Title input */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
                     Título
                   </label>
-                  <input 
+                  <input
                     type="text"
                     value={milestone.title}
                     onChange={(e) => handleUpdateMilestone(milestone.id, 'title', e.target.value)}
-                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-gray-800"
                   />
                 </div>
-                
+
                 {/* Date input */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
                     Fecha
                   </label>
-                  <input 
+                  <input
                     type="date"
                     value={milestone.date}
                     onChange={(e) => handleUpdateMilestone(milestone.id, 'date', e.target.value)}
-                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-gray-800"
                   />
                 </div>
-                
+
                 {/* Description textarea */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -246,22 +247,22 @@ export function TimelineConfigurator({ milestones, onSave }: TimelineConfigurato
                   <textarea
                     value={milestone.description || ''}
                     onChange={(e) => handleUpdateMilestone(milestone.id, 'description', e.target.value)}
-                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-gray-800"
                     rows={2}
                   />
                 </div>
-                
+
                 {/* Document version association */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
                     Versión del Documento
                   </label>
-                  <input 
+                  <input
                     type="text"
                     value={milestone.documentVersion || ''}
                     onChange={(e) => handleUpdateMilestone(milestone.id, 'documentVersion', e.target.value)}
                     placeholder="Identificador de la versión"
-                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-gray-800"
                   />
                 </div>
               </div>
@@ -271,4 +272,4 @@ export function TimelineConfigurator({ milestones, onSave }: TimelineConfigurato
       </div>
     </div>
   );
-} 
+}
