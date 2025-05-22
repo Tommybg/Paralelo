@@ -70,25 +70,6 @@ export function TimelineConfigurator({ milestones, onSave }: TimelineConfigurato
     setIsEditing(true);
   };
 
-  const handleUpdateMilestone = (id: string, field: keyof Milestone, value: string) => {
-    // If updating type, check for duplicates
-    if (field === 'type') {
-      const typeValue = value as MilestoneType;
-      const hasTypeAlready = editableMilestones.some(m => m.id !== id && m.type === typeValue);
-
-      if (hasTypeAlready) {
-        setErrorMessage(`Ya existe un hito de tipo ${milestoneLabels[typeValue]}.`);
-        return;
-      }
-    }
-
-    setEditableMilestones(editableMilestones.map(m =>
-      m.id === id ? { ...m, [field]: value } : m
-    ));
-    setIsEditing(true);
-    setErrorMessage(null);
-  };
-
   const handleSave = () => {
     // Check for duplicates before saving
     const typeCount = new Map<MilestoneType, number>();
@@ -177,95 +158,22 @@ export function TimelineConfigurator({ milestones, onSave }: TimelineConfigurato
             No hay hitos configurados. Añade uno para empezar.
           </div>
         ) : (
-          editableMilestones.map((milestone, index) => (
+          editableMilestones.map((milestone) => (
             <div
               key={milestone.id}
-              className="border border-gray-200 rounded-lg p-3 bg-gray-50"
+              className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded"
             >
-              <div className="flex justify-between items-start mb-3">
-                <div className="text-sm font-medium text-gray-800">
-                  Hito 
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleRemoveMilestone(milestone.id)}
-                  className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 h-auto"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+              <div className="text-sm font-medium text-gray-800">
+                Hito {editableMilestones.indexOf(milestone) + 1}
               </div>
-
-              <div className="space-y-3">
-                {/* Type select */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Tipo de Hito
-                  </label>
-                  <select
-                    value={milestone.type}
-                    onChange={(e) => handleUpdateMilestone(milestone.id, 'type', e.target.value as MilestoneType)}
-                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-gray-800"
-                  >
-                    {Object.entries(milestoneLabels).map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Title input */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Título
-                  </label>
-                  <input
-                    type="text"
-                    value={milestone.title}
-                    onChange={(e) => handleUpdateMilestone(milestone.id, 'title', e.target.value)}
-                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-gray-800"
-                  />
-                </div>
-
-                {/* Date input */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Fecha
-                  </label>
-                  <input
-                    type="date"
-                    value={milestone.date}
-                    onChange={(e) => handleUpdateMilestone(milestone.id, 'date', e.target.value)}
-                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-gray-800"
-                  />
-                </div>
-
-                {/* Description textarea */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Descripción (opcional)
-                  </label>
-                  <textarea
-                    value={milestone.description || ''}
-                    onChange={(e) => handleUpdateMilestone(milestone.id, 'description', e.target.value)}
-                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-gray-800"
-                    rows={2}
-                  />
-                </div>
-
-                {/* Document version association */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Versión del Documento
-                  </label>
-                  <input
-                    type="text"
-                    value={milestone.documentVersion || ''}
-                    onChange={(e) => handleUpdateMilestone(milestone.id, 'documentVersion', e.target.value)}
-                    placeholder="Identificador de la versión"
-                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-gray-800"
-                  />
-                </div>
-              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleRemoveMilestone(milestone.id)}
+                className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 h-auto"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
             </div>
           ))
         )}

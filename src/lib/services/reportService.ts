@@ -1,8 +1,6 @@
 import { ComparisonResult, Difference } from '@/types/comparison';
 import { ReportOptions } from '@/components/common/ReportGenerator';
 import { jsPDF } from 'jspdf';
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, BorderStyle } from 'docx';
-import { saveAs } from 'file-saver';
 
 // Function to generate a PDF report
 export const generatePDFReport = async (
@@ -45,7 +43,7 @@ export const generatePDFReport = async (
   }
   
   // Add impact analysis if requested
-  if (options.includeAnalysis && comparisonResult.impactAnalysis) {
+  if (options.includeImpactAnalysis && comparisonResult.impactAnalysis) {
     doc.setFontSize(14);
     doc.text('Análisis de Impacto', 20, yPos);
     
@@ -167,234 +165,6 @@ export const generatePDFReport = async (
   doc.save(`comparacion_${new Date().toISOString().split('T')[0]}.pdf`);
 };
 
-// Function to generate a DOCX report
-export const generateDOCXReport = async (
-  comparisonResult: ComparisonResult,
-  doc1Name: string,
-  doc2Name: string,
-  options: ReportOptions
-): Promise<void> => {
-  // Create a new Document
-  const document = new Document({
-    sections: [
-      {
-        properties: {},
-        children: [
-          // Title
-          new Paragraph({
-            text: 'Reporte de Comparación de Documentos Legislativos',
-            heading: HeadingLevel.HEADING_1,
-            spacing: {
-              after: 200,
-            },
-          }),
-          
-          // Document information
-          new Paragraph({
-            children: [
-              new TextRun({ text: 'Documento 1: ', bold: true }),
-              new TextRun(doc1Name),
-            ],
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({ text: 'Documento 2: ', bold: true }),
-              new TextRun(doc2Name),
-            ],
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({ text: 'Fecha: ', bold: true }),
-              new TextRun(new Date().toLocaleDateString()),
-            ],
-            spacing: {
-              after: 400,
-            },
-          }),
-          
-          // Summary section
-          ...(options.includeSummary && comparisonResult.summary ? [
-            new Paragraph({
-              text: 'Resumen',
-              heading: HeadingLevel.HEADING_2,
-              spacing: {
-                before: 400,
-                after: 200,
-              },
-            }),
-            new Paragraph({
-              text: comparisonResult.summary,
-              spacing: {
-                after: 400,
-              },
-            }),
-          ] : []),
-          
-          // Analysis section
-          ...(options.includeAnalysis && comparisonResult.impactAnalysis ? [
-            new Paragraph({
-              text: 'Análisis de Impacto',
-              heading: HeadingLevel.HEADING_2,
-              spacing: {
-                before: 400,
-                after: 200,
-              },
-            }),
-            new Paragraph({
-              text: comparisonResult.impactAnalysis,
-              spacing: {
-                after: 400,
-              },
-            }),
-          ] : []),
-          
-          // Differences section
-          new Paragraph({
-            text: 'Cambios por Artículo',
-            heading: HeadingLevel.HEADING_2,
-            spacing: {
-              before: 400,
-              after: 200,
-            },
-          }),
-        ],
-      },
-    ],
-  });
-  
-  // Group differences by article
-  const differencesByArticle: { [articleId: string]: Difference[] } = {};
-  
-  comparisonResult.differences.forEach(diff => {
-    // Extract article ID from location
-    const articleMatch = diff.location.match(/Art(?:ículo|icle)\s+(\d+)/i);
-    const articleId = articleMatch ? articleMatch[1] : 'other';
-    
-    if (!differencesByArticle[articleId]) {
-      differencesByArticle[articleId] = [];
-    }
-    
-    // Only add differences of selected types
-    if (options.selectedDiffTypes.includes(diff.type)) {
-      differencesByArticle[articleId].push(diff);
-    }
-  });
-  
-  // Filter by selected articles if not including all
-  let articlesToShow = Object.keys(differencesByArticle);
-  if (!options.includeAll) {
-    articlesToShow = articlesToShow.filter(id => options.selectedArticleIds.includes(id));
-  }
-  
-  // Sort articles numerically
-  articlesToShow.sort((a, b) => {
-    if (a === 'other') return 1;
-    if (b === 'other') return -1;
-    return parseInt(a) - parseInt(b);
-  });
-  
-  // Add differences by article
-  for (const articleId of articlesToShow) {
-    const differences = differencesByArticle[articleId];
-    
-    // Skip if no differences of selected types
-    if (differences.length === 0) continue;
-    
-    // Add article header
-    document.addSection({
-      children: [
-        new Paragraph({
-          text: articleId === 'other' ? 'Otros Cambios' : `Artículo ${articleId}`,
-          heading: HeadingLevel.HEADING_3,
-          spacing: {
-            before: 300,
-            after: 200,
-          },
-        }),
-        
-        // Create a table for the differences
-        new Table({
-          width: {
-            size: 100,
-            type: "pct",
-          },
-          borders: {
-            top: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
-            bottom: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
-            left: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
-            right: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
-            insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
-            insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
-          },
-          rows: [
-            // Table header
-            new TableRow({
-              children: [
-                new TableCell({
-                  children: [new Paragraph({ text: "Tipo", bold: true })],
-                  width: { size: 20, type: "pct" },
-                }),
-                new TableCell({
-                  children: [new Paragraph({ text: "Contenido", bold: true })],
-                  width: { size: 50, type: "pct" },
-                }),
-                new TableCell({
-                  children: [new Paragraph({ text: "Importancia", bold: true })],
-                  width: { size: 30, type: "pct" },
-                }),
-              ],
-              tableHeader: true,
-            }),
-            
-            // Table rows for differences
-            ...differences.map(
-              (diff) =>
-                new TableRow({
-                  children: [
-                    new TableCell({
-                      children: [
-                        new Paragraph({
-                          text: diff.type === 'addition' 
-                            ? 'Adición' 
-                            : diff.type === 'deletion' 
-                              ? 'Eliminación' 
-                              : 'Modificación',
-                          color: diff.type === 'addition' 
-                            ? '00AA00' 
-                            : diff.type === 'deletion' 
-                              ? 'AA0000' 
-                              : 'BB8800',
-                        }),
-                      ],
-                    }),
-                    new TableCell({
-                      children: [
-                        new Paragraph(diff.content.length > 200 
-                          ? diff.content.substring(0, 200) + '...'
-                          : diff.content
-                        ),
-                      ],
-                    }),
-                    new TableCell({
-                      children: [
-                        new Paragraph(diff.significance || ""),
-                      ],
-                    }),
-                  ],
-                })
-            ),
-          ],
-        }),
-      ],
-    });
-  }
-  
-  // Generate and save the Word document
-  Packer.toBlob(document).then(blob => {
-    saveAs(blob, `comparacion_${new Date().toISOString().split('T')[0]}.docx`);
-  });
-};
-
 // Main export function that determines the format and calls the appropriate generator
 export const generateReport = async (
   comparisonResult: ComparisonResult,
@@ -406,7 +176,8 @@ export const generateReport = async (
     if (options.format === 'pdf') {
       return generatePDFReport(comparisonResult, doc1Name, doc2Name, options);
     } else {
-      return generateDOCXReport(comparisonResult, doc1Name, doc2Name, options);
+      console.warn(`Unsupported report format: ${options.format}`);
+      throw new Error(`Unsupported report format: ${options.format}`);
     }
   } catch (error) {
     console.error('Error generating report:', error);
