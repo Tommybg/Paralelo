@@ -2,12 +2,13 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import { AuthProvider } from '../contexts/AuthContext'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Document Diff Tool',
-  description: 'Compare and analyze documents efficiently',
+  title: 'Doc Comparison - Análisis de Documentos Legislativos',
+  description: 'Herramienta para comparar y analizar documentos legislativos de manera eficiente',
 }
 
 export default function RootLayout({
@@ -16,11 +17,11 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="es">
       <body className={`${inter.className} min-h-screen bg-gray-50`}>
-        <main className="container mx-auto px-2 py-6">
+        <AuthProvider>
           {children}
-        </main>
+        </AuthProvider>
       </body>
     </html>
   )
