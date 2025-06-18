@@ -20,13 +20,11 @@ export interface UserProfile {
 
 export interface Document {
   id: string;
-  user_id: string;
-  name: string;
-  file_url: string;
-  file_type: string;
-  size: number;
-  metadata: Record<string, any>;
-  uploaded_at: string;
+  title: string;
+  content: string;
+  uploadedAt: string;
+  userId: string;
+  metadata?: Record<string, unknown>;
 }
 
 export interface UserComparison {
@@ -57,4 +55,13 @@ export interface AuthContextType {
   signUp: (email: string, password: string, name: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
+}
+
+export interface Comparison {
+  id: string;
+  document1Id: string;
+  document2Id: string;
+  result: Record<string, unknown>;
+  createdAt: string;
+  userId: string;
 } 

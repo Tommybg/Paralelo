@@ -19,7 +19,7 @@ export class AuthService {
       if (error) throw error;
 
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Sign up error:', error);
       throw new Error(`Sign up failed: ${error}`);
     }
@@ -35,7 +35,7 @@ export class AuthService {
 
       if (error) throw error;
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Sign in error:', error);
       throw new Error(`Sign in failed: ${error}`);
     }
@@ -46,7 +46,7 @@ export class AuthService {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Sign out error:', error);
       throw new Error(`Sign out failed: ${error}`);
     }
@@ -58,7 +58,7 @@ export class AuthService {
       const { data: { user }, error } = await supabase.auth.getUser();
       if (error) throw error;
       return user;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Get current user error:', error);
       return null;
     }
@@ -70,19 +70,18 @@ export class AuthService {
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error) throw error;
       return session;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Get session error:', error);
       return null;
     }
   }
 
   // Simplified profile (from Supabase metadata for now)
-  async getUserProfile(userId: string): Promise<UserProfile | null> {
+  async getUserProfile(_userId: string): Promise<UserProfile | null> {
     try {
       const { data: { user }, error } = await supabase.auth.getUser();
       if (error || !user) return null;
 
-      // Create a simplified profile from Supabase user data
       return {
         id: user.id,
         supabase_user_id: user.id,
@@ -93,7 +92,7 @@ export class AuthService {
         created_at: user.created_at,
         updated_at: user.updated_at || user.created_at,
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Get profile error:', error);
       return null;
     }
@@ -102,7 +101,7 @@ export class AuthService {
   // Simplified update (only Supabase metadata for now)
   async updateUserProfile(userId: string, updates: Partial<UserProfile>): Promise<UserProfile> {
     try {
-      const { data, error } = await supabase.auth.updateUser({
+      const { error } = await supabase.auth.updateUser({
         data: {
           full_name: updates.full_name,
           avatar_url: updates.avatar_url,
@@ -111,19 +110,18 @@ export class AuthService {
 
       if (error) throw error;
 
-      // Return updated profile
       const profile = await this.getUserProfile(userId);
       if (!profile) throw new Error('Failed to get updated profile');
       
       return profile;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Update profile error:', error);
       throw new Error(`Failed to update profile: ${error}`);
     }
   }
 
   // Mock stats for now (will connect to Aurora later)
-  async getUserStats(userId: string) {
+  async getUserStats(_userId: string) {
     return {
       documents_count: 0,
       comparisons_count: 0,
@@ -139,14 +137,14 @@ export class AuthService {
       });
 
       if (error) throw error;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Reset password error:', error);
       throw new Error(`Failed to reset password: ${error}`);
     }
   }
 
   // Listen to auth changes
-  onAuthStateChange(callback: (event: string, session: any) => void) {
+  onAuthStateChange(callback: (event: string, session: unknown) => void) {
     return supabase.auth.onAuthStateChange(callback);
   }
 }
