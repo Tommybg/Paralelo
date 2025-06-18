@@ -1,4 +1,4 @@
-import { Pool, PoolConfig } from 'pg';
+import { Pool, PoolConfig, PoolClient, QueryResult } from 'pg';
 
 const poolConfig: PoolConfig = {
   host: process.env.AURORA_HOST,
@@ -32,7 +32,7 @@ export const testConnection = async () => {
 };
 
 // Generic query function
-export const query = async (text: string, params?: any[]) => {
+export const query = async (text: string, params?: unknown[]): Promise<QueryResult> => {
   const client = await pool.connect();
   try {
     const result = await client.query(text, params);
@@ -43,7 +43,7 @@ export const query = async (text: string, params?: any[]) => {
 };
 
 // Transaction helper
-export const withTransaction = async (callback: (client: any) => Promise<any>) => {
+export const withTransaction = async <T>(callback: (client: PoolClient) => Promise<T>): Promise<T> => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');

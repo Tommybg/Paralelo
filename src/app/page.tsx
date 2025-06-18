@@ -1,7 +1,10 @@
 'use client';
 
+// Force dynamic rendering to avoid SSG issues with useSearchParams
+export const dynamic = 'force-dynamic';
+
 import React, { useState, useEffect, JSX } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
@@ -27,7 +30,6 @@ interface FileInfo {
 export default function Home() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
   
   const [doc1, setDoc1] = useState<FileInfo | null>(null);
   const [doc2, setDoc2] = useState<FileInfo | null>(null);
@@ -112,8 +114,9 @@ export default function Home() {
     ]);
 
     // Handle URL parameters from dashboard navigation
-    const sidebarParam = searchParams.get('sidebar');
-    const focusParam = searchParams.get('focus');
+    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const sidebarParam = urlParams?.get('sidebar');
+    const focusParam = urlParams?.get('focus');
     
     if (sidebarParam === 'history') {
       setActiveTab('history');
@@ -134,7 +137,7 @@ export default function Home() {
         }
       }, 400); // Small delay to ensure DOM is ready
     }
-  }, [searchParams]);
+  }, []);
 
   // Filter differences when search query or filter options change
   useEffect(() => {
