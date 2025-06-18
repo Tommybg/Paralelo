@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, JSX } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
-import { Upload, Loader2, Flag } from 'lucide-react';
+import { Upload, Loader2, Flag, LayoutDashboard } from 'lucide-react';
 import { compareDocuments } from '@/lib/services/comparisonService';
 import type { ComparisonResult } from '@/types/comparison';
 import { extractTextFromFile } from '@/lib/utils/Processor';
@@ -23,9 +25,13 @@ interface FileInfo {
 }
 
 export default function Home() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
   const [doc1, setDoc1] = useState<FileInfo | null>(null);
   const [doc2, setDoc2] = useState<FileInfo | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loadingComparison, setLoadingComparison] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [comparison, setComparison] = useState<ComparisonResult | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -47,6 +53,30 @@ export default function Home() {
   
   // Estado para controlar el sidebar
   const [activeTab, setActiveTab] = useState<'timeline' | 'history' | 'reports'>('timeline');
+
+  // Redirect to auth if not authenticated
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/auth');
+    }
+  }, [user, loading, router]);
+
+  // Show loading while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-10 w-10 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Verificando autenticación...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show nothing while redirecting
+  if (!user) {
+    return null;
+  }
 
   useEffect(() => {
     setMounted(true);
@@ -80,7 +110,31 @@ export default function Home() {
         documentVersionId: 'version-2',
       },
     ]);
-  }, []);
+
+    // Handle URL parameters from dashboard navigation
+    const sidebarParam = searchParams.get('sidebar');
+    const focusParam = searchParams.get('focus');
+    
+    if (sidebarParam === 'history') {
+      setActiveTab('history');
+      setIsSidebarOpen(true);
+    }
+    
+    if (sidebarParam === 'reports') {
+      setActiveTab('reports');
+      setIsSidebarOpen(true);
+    }
+    
+    if (focusParam === 'upload') {
+      // Auto-trigger file upload dialog for document 1
+      setTimeout(() => {
+        const uploadInput = document.getElementById('doc1-upload');
+        if (uploadInput) {
+          uploadInput.click();
+        }
+      }, 400); // Small delay to ensure DOM is ready
+    }
+  }, [searchParams]);
 
   // Filter differences when search query or filter options change
   useEffect(() => {
@@ -157,7 +211,7 @@ export default function Home() {
       return;
     }
 
-    setLoading(true);
+    setLoadingComparison(true);
     setError(null);
 
     try {
@@ -217,7 +271,7 @@ export default function Home() {
       setError(err instanceof Error ? err.message : 'Error comparing documents'); 
       console.error('Comparison error:', err);
     } finally { 
-      setLoading(false); 
+      setLoadingComparison(false); 
     } 
   };
 
@@ -479,6 +533,14 @@ export default function Home() {
     <div className="min-h-screen w-full bg-white p-6">
       
       <div className="absolute top-0 right-3 z-50 flex gap-1 items-center mt-0">
+        <Button
+          onClick={() => router.push('/dashboard')}
+          variant="outline"
+          className="mr-4 flex items-center bg-white/90 backdrop-blur-sm hover:bg-white border border-gray-200 text-gray-700"
+        >
+          <LayoutDashboard className="w-4 h-4 mr-2" />
+          Dashboard
+        </Button>
         <Image 
           src="/logo_nobg.png" 
           alt="LegisCheck Logo" 
@@ -652,17 +714,17 @@ export default function Home() {
           <div className="flex-[1] flex flex-col gap-4 min-h-0 max-w-md w-full min-w-0">
             <Button 
               onClick={handleComparison} 
-              disabled={!doc1 || !doc2 || loading}
+              disabled={!doc1 || !doc2 || loadingComparison}
               variant="default"
               className="w-full shrink-0 bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
             >
-              {loading && (
+              {loadingComparison && (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   {['Comparando', 'Pensando', 'Analizando'][Math.floor(Math.random() * 3)]}...
                 </>
               )}
-              {!loading && 'Comparar Documentos'}
+              {!loadingComparison && 'Comparar Documentos'}
             </Button>
 
             <Card className="flex-1 min-h-0 max-h-[calc(100vh-12rem)] bg-gray-50/90 backdrop-blur-sm border border-gray-200">
