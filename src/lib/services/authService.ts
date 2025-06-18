@@ -1,5 +1,6 @@
 import { supabase } from '../supabase/client';
-import { User, UserProfile } from '../../types/auth';
+import { UserProfile } from '../../types/auth';
+import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 
 export class AuthService {
   
@@ -19,7 +20,7 @@ export class AuthService {
       if (error) throw error;
 
       return data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Sign up error:', error);
       throw new Error(`Sign up failed: ${error}`);
     }
@@ -35,7 +36,7 @@ export class AuthService {
 
       if (error) throw error;
       return data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Sign in error:', error);
       throw new Error(`Sign in failed: ${error}`);
     }
@@ -46,7 +47,7 @@ export class AuthService {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Sign out error:', error);
       throw new Error(`Sign out failed: ${error}`);
     }
@@ -58,7 +59,7 @@ export class AuthService {
       const { data: { user }, error } = await supabase.auth.getUser();
       if (error) throw error;
       return user;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Get current user error:', error);
       return null;
     }
@@ -70,7 +71,7 @@ export class AuthService {
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error) throw error;
       return session;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Get session error:', error);
       return null;
     }
@@ -92,7 +93,7 @@ export class AuthService {
         created_at: user.created_at,
         updated_at: user.updated_at || user.created_at,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Get profile error:', error);
       return null;
     }
@@ -114,7 +115,7 @@ export class AuthService {
       if (!profile) throw new Error('Failed to get updated profile');
       
       return profile;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Update profile error:', error);
       throw new Error(`Failed to update profile: ${error}`);
     }
@@ -137,14 +138,14 @@ export class AuthService {
       });
 
       if (error) throw error;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Reset password error:', error);
       throw new Error(`Failed to reset password: ${error}`);
     }
   }
 
   // Listen to auth changes
-  onAuthStateChange(callback: (event: string, session: unknown) => void) {
+  onAuthStateChange(callback: (event: AuthChangeEvent, session: Session | null) => void) {
     return supabase.auth.onAuthStateChange(callback);
   }
 }

@@ -45,8 +45,9 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToLogin }) => {
     try {
       await signUp(formData.email, formData.password, formData.fullName);
       setSuccess(true);
-    } catch (error: any) {
-      setError(error.message || 'Error al crear la cuenta');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Error al crear la cuenta';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

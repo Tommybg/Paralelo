@@ -27,8 +27,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignUp }) => {
 
     try {
       await signIn(formData.email, formData.password);
-    } catch (error: any) {
-      setError(error.message || 'Error al iniciar sesión');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Error al iniciar sesión';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

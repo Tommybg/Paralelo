@@ -13,7 +13,7 @@ export interface UserProfile {
   email: string;
   full_name: string;
   plan_type: 'free' | 'premium';
-  avatar_url?: string;
+  avatar_url: string | null;
   created_at: string;
   updated_at: string;
 }
