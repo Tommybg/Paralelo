@@ -81,6 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await authService.signUp(email, password, name);
       // Note: User will be automatically signed in after email verification
+      setLoading(false);
     } catch (error) {
       setLoading(false);
       throw error;
