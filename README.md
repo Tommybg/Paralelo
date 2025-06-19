@@ -4,7 +4,7 @@ Paralelo es una herramienta de comparación de documentos (en paralelo) que perm
 
 ![Paralelo Screenshot](paralelo.png)
 
-## 🚀 Características
+## Características
 
 - **Comparación Inteligente**: Detección automática de adiciones, eliminaciones y modificaciones
 - **Resaltado Visual**: Visualización clara de cambios con código de colores
@@ -14,7 +14,7 @@ Paralelo es una herramienta de comparación de documentos (en paralelo) que perm
 - **Resúmenes Ejecutivos**: Generación automática de informes de cambios
 - **Procesamiento en Tiempo Real**: Resultados de comparación instantáneos
 
-## 🛠️ Tecnologías Utilizadas
+## Tecnologías Utilizadas
 
 - **Frontend**: React, TypeScript, Tailwind CSS
 - **Componentes UI**: shadcn/ui
@@ -24,13 +24,13 @@ Paralelo es una herramienta de comparación de documentos (en paralelo) que perm
 - **Manejo de Archivos**: Browser File API
 - **Estilos**: Tailwind CSS con animaciones personalizadas
 
-## 📋 Requisitos Previos
+## Requisitos Previos
 
 - Node.js 18.0 o superior
 - Clave API de OpenAI para funciones de análisis avanzado
 - Navegador web moderno (Chrome, Firefox, Safari, Edge)
 
-## ⚙️ Instalación
+## Instalación
 
 1. Clonar el repositorio:
 ```bash
@@ -53,7 +53,7 @@ OPENAI_API_KEY=tu_clave_api_aqui
 npm run dev
 ```
 
-## 🔧 Configuración
+## Configuración
 
 La aplicación se puede configurar mediante variables de entorno:
 
@@ -63,7 +63,7 @@ NEXT_PUBLIC_SUPPORTED_FORMATS=".txt,.pdf"
 OPENAI_API_KEY=tu_clave_api_aqui
 ```
 
-## 🚀 Despliegue
+## Despliegue
 
 1. Construir la aplicación:
 ```bash
@@ -77,7 +77,7 @@ npm start
 
 La aplicación estará disponible en `http://localhost:3000`.
 
-## 🧪 Pruebas
+## Pruebas
 
 Ejecutar suite de pruebas:
 ```bash
@@ -89,7 +89,7 @@ Ejecutar pruebas end-to-end:
 npm run test:e2e
 ```
 
-## 📁 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```
 paralelo/
@@ -101,7 +101,7 @@ paralelo/
 └── types/             # Definiciones de tipos TypeScript
 ```
 
-## 🤝 Contribuir
+## Contribuir
 
 1. Haz un fork del repositorio
 2. Crea una nueva rama
@@ -110,18 +110,18 @@ paralelo/
 
 Por favor, lee [CONTRIBUTING.md](CONTRIBUTING.md) para más detalles sobre nuestro código de conducta y proceso de contribución.
 
-## 📄 Licencia
+## Licencia
 
 Este proyecto está licenciado bajo la Licencia MIT - ver el archivo [LICENSE.md](LICENSE.md) para más detalles.
 
-## 🙏 Agradecimientos
+## Agradecimientos
 
 - [shadcn/ui](https://ui.shadcn.com/) por los hermosos componentes UI
 - [OpenAI](https://openai.com/) por la API GPT-4
 - [PDF.js](https://mozilla.github.io/pdf.js/) por el procesamiento de PDF
 - Los equipos de React y Next.js
 
-## 🔮 Planes Futuros
+## Planes Futuros
 
 - [ ] Soporte para más formatos de archivo (DOCX, RTF)
 - [ ] Funciones de colaboración
