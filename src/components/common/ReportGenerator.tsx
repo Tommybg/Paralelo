@@ -43,7 +43,7 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
   return (
     <Card className="w-full">
       <CardContent className="p-4">
-        <h3 className="text-lg font-semibold mb-4">Generar Reporte</h3>
+        <h3 className="text-lg font-semibold text-black mb-4">Generar Reporte</h3>
         
         <div className="space-y-4">
           <div className="flex items-center space-x-2">
@@ -54,12 +54,12 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
               onChange={(e) => setOptions(prev => ({ ...prev, includeAll: e.target.checked }))}
               className="rounded border-gray-300"
             />
-            <label htmlFor="includeAll" className="text-sm">Incluir Todos los Cambios</label>
+            <label htmlFor="includeAll" className="text-sm text-black">Incluir Todos los Cambios</label>
           </div>
 
           {!options.includeAll && (
             <div className="space-y-2 pl-4">
-              <div className="text-sm font-medium text-gray-700">Tipos de Cambios</div>
+              <div className="text-sm font-medium text-black">Tipos de Cambios</div>
               {(['addition', 'deletion', 'modification'] as const).map((type) => (
                 <div key={type} className="flex items-center space-x-2">
                   <input
@@ -74,7 +74,11 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
                     }}
                     className="rounded border-gray-300"
                   />
-                  <label htmlFor={`diff-type-${type}`} className="text-sm">
+                  <label htmlFor={`diff-type-${type}`} className={`text-sm ${
+                    type === 'addition' ? 'text-green-500' :
+                    type === 'deletion' ? 'text-red-500' :
+                    'text-yellow-500'
+                  }`}>
                     {type === 'addition' ? 'Adiciones' :
                      type === 'deletion' ? 'Eliminaciones' :
                      'Modificaciones'}
@@ -92,7 +96,7 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
               onChange={(e) => setOptions(prev => ({ ...prev, includeSummary: e.target.checked }))}
               className="rounded border-gray-300"
             />
-            <label htmlFor="includeSummary" className="text-sm">Incluir Resumen</label>
+            <label htmlFor="includeSummary" className="text-sm text-black">Incluir Resumen</label>
           </div>
 
           <div className="flex items-center space-x-2">
@@ -103,7 +107,7 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
               onChange={(e) => setOptions(prev => ({ ...prev, includeImpactAnalysis: e.target.checked }))}
               className="rounded border-gray-300"
             />
-            <label htmlFor="includeImpactAnalysis" className="text-sm">Incluir Análisis de Impacto</label>
+            <label htmlFor="includeImpactAnalysis" className="text-sm text-black">Incluir Análisis de Impacto</label>
           </div>
 
           <div className="flex items-center space-x-2">
@@ -114,7 +118,7 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
               onChange={(e) => setOptions(prev => ({ ...prev, includeDetailedDiffs: e.target.checked }))}
               className="rounded border-gray-300"
             />
-            <label htmlFor="includeDetailedDiffs" className="text-sm">Incluir Diferencias Detalladas</label>
+            <label htmlFor="includeDetailedDiffs" className="text-sm text-black">Incluir Diferencias Detalladas</label>
           </div>
 
           <Button

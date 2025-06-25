@@ -1,0 +1,116 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+PLAN DE INTEGRACIÓN AURORA POSTGRESQL + S3  
+(orientado a tu stack Next.js / React + Supabase-Auth)
+
+────────────────────────────────────────
+FASE 0 - PREPARACIÓN DE INFRAESTRUCTURA
+────────────────────────────────────────
+1. AWS  
+   • Crear Aurora PostgreSQL (serverless v2 → auto-scaling).  
+   • Crear bucket S3 (`legischeck-prod-docs`) con dos prefijos: `uploads/` y `reports/`.  
+   • Activar versionado y lifecycle (borrar *multipart* incompletos, *cold storage* > 90 d).  
+2. Secrets / env‐vars (añade en Vercel / `.env`):  
+   DATABASE_URL,  AWS_ACCESS_KEY_ID,  AWS_SECRET_ACCESS_KEY,  
+   S3_REGION, S3_BUCKET.  
+3. CI/CD  
+   • Añadir migraciones a GitHub Actions (`psql $DATABASE_URL -f database/aurora-schema.sql`).  
+   • Tests con `npm run test:e2e` contra instancia temporal.
+
+────────────────────────────────────────
+FASE 1 - ESQUEMA Y ORMs
+────────────────────────────────────────
+1. Revisar/ajustar `database/aurora-schema.sql` (ya cubre users, documents, comparisons, differences, timelines, milestones, reports).  
+2. Elegir capa de acceso:  
+   • Opción ligera: `pg` nativo (ya tienes `lib/db/aurora.ts`).  
+   • Opción DX: Prisma (generar `schema.prisma` a partir del SQL).  
+3. Generar modelos/servicios:  
+   `DocumentModel`, `ComparisonModel`, `TimelineModel`, `ReportModel`.
+
+────────────────────────────────────────
+FASE 2 - MÓDULO DOCUMENTOS (S3 + DB)
+────────────────────────────────────────
+Back-end  
+  a. `src/app/api/documents/upload/route.ts`  
+     • Valida file, sube a S3 (`putObject`), guarda record en `documents`.  
+  b. `src/lib/services/documentService.ts`  
+     • `uploadDocument(file, userId)` → retorna `Document`.  
+Front-end  
+  • En `handleFileUpload` (Home) llamar a `documentService.uploadDocument` primero; después extraer texto.  
+Metric-counter  
+  • `INSERT` en `documents` dispara `NOTIFY documents_inserted` (opcional) para tiempo real.
+
+────────────────────────────────────────
+FASE 3 - COMPARACIONES + DIFFERENCES
+────────────────────────────────────────
+1. Al terminar `compareDocuments`:  
+   • `withTransaction` → `INSERT comparisons … RETURNING id`  
+   • Bulk-insert array de `differences` con `copyFrom`.  
+   • Responder al FE con el JSON original + `comparisonId` (para re-visión futura).  
+2. Historial  
+   • Crear trigger `AFTER INSERT ON comparisons` → inserta en `history_entries` (o usa servicio explícito).  
+3. UI  
+   • `historyEntries` ahora proviene de `GET /api/history`.  
+   • `HistoryView` sólo renderiza; sin estado local “falso”.
+
+────────────────────────────────────────
+FASE 4 - TIMELINE & MILESTONES
+────────────────────────────────────────
+1. `TimelineConfigurator`  
+   • `POST /api/timelines/:id/milestones` para crear/actualizar, `DELETE /milestones/:id` para borrar.  
+   • Cada hito guarda `document_version_id` → el `comparison_id` que lo originó.  
+2. `handleMilestoneClick`  
+   • `GET /api/comparisons/:id` → carga las diferencias y vuelve a pintarlas (ya persistidas).  
+3. Policy: solo propietario (`user_id`) puede CRUD.
+
+────────────────────────────────────────
+FASE 5 - REPORTES (PDF)
+────────────────────────────────────────
+1. `generateReport`  
+   • Produce PDF, lo sube a S3 (`reports/{comparisonId}.pdf`).  
+   • `INSERT reports …, file_url`.  
+2. Contador de descargas  
+   • `GET /api/reports/:id/download` → `redirect 302` a S3 presignado; antes hace `UPDATE reports SET downloads = downloads + 1`.  
+   • Dashboard mostrará `SELECT COUNT(*) FROM reports WHERE user_id = …`.
+
+────────────────────────────────────────
+FASE 6 - DASHBOARD MÉTRICAS
+────────────────────────────────────────
+`authService.getUserStats(userId)`  
+```sql
+SELECT 
+  (SELECT COUNT(*) FROM documents  WHERE user_id = $1)  AS documents_count,
+  (SELECT COUNT(*) FROM comparisons WHERE user_id = $1) AS comparisons_count,
+  (SELECT COUNT(*) FROM reports    WHERE user_id = $1)  AS reports_count;
+```  
+• Llamada ya existe; sólo conecta a Aurora.
+
+────────────────────────────────────────
+FASE 7 - LIMPIEZA Y GOBERNANZA
+────────────────────────────────────────
+1. Borrado en cascada: FK `ON DELETE CASCADE` ya definido (documents → comparisons → differences, timelines → milestones).  
+2. Cron Lambda “cleanup” para eliminar archivos huérfanos en S3.  
+3. Backups: Aurora continuous backup + export to S3 weekly.  
+4. Observabilidad: CloudWatch + PGStatStatements + Vercel Logs.
+
+────────────────────────────────────────
+FASE 8 - ESCALADO FUTURO
+────────────────────────────────────────
+• Sharding/partition por `user_id` si >10M comparaciones.  
+• ElasticSearch si buscas texto completo dentro de documentos.  
+• SQS + Lambda para procesar comparaciones en batch si suben PDFs muy grandes.
+
+────────────────────────────────────────
+CHECKLIST DE CAMBIOS EN CÓDIGO EXISTENTE
+────────────────────────────────────────
+[ ] Crear `lib/aws/s3.ts` helper (presigned URLs, putObject).  
+[ ] Actualizar `AuthContext` para pasar `user.id` (supabase uuid) a servicios.  
+[ ] Refactor services (`documentService`, `comparisonService`, `reportService`) para usar Aurora.  
+[ ] Crear nuevas rutas API (documents, comparisons, timelines, reports).  
+[ ] Sustituir estados “simulados” (`historyEntries`, `milestones`) por fetch real (SWR o React Query).  
+[ ] Añadir loading/error handling.
+
+Con este roadmap podrás avanzar incrementalmente, desplegando valor en cada fase sin romper la UX y manteniendo la integridad de datos a largo plazo.

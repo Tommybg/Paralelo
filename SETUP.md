@@ -165,17 +165,16 @@ pg_dump -h tu-aurora-endpoint -U postgres doc_comparison > backup.sql
 ## 📊 Monitoreo
 
 - **Aurora**: CloudWatch metrics
-- **Supabase**: Dashboard de métricas
+- **Supabase**: Dashboard de autenticación 
 - **App**: Console logs en producción
 
 ## 🚀 Despliegue
 
 Para producción:
-
-1. **Vercel/Netlify** para el frontend
-2. **Aurora Serverless** para escalar automáticamente
-3. **CloudFront** para CDN de archivos
-4. **Variables de entorno** en la plataforma de hosting
+1. **Railway** para el frontend y backend (Next.js + API routes).
+2. **Aurora Serverless v2** ya configurado para escalamiento automático.
+3. **S3** para almacenamiento de archivos y reportes.
+4. **Variables de entorno** configuradas directamente en Railway.
 
 ## ❓ Troubleshooting
 
