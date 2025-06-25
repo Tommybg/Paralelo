@@ -1,5 +1,7 @@
 # [LegisCheck](https://paralelo.up.railway.app/)
 
+![Dashboard LegisCheck](public/paralelo.png)
+
 LegisCheck es una plataforma  con fines **comerciales** para la comparación inteligente de documentos legislativos.  
 Permite a congresos, firmas jurídicas y organizaciones de análisis normativo detectar, rastrear y entender los cambios entre versiones de un texto de forma rápida, visual y asistida por IA. Ademas de tener su historial centralizado, la capacidad de tener un seguimiento con linea de tiempo mediante hitos, sin olvidar la capacidad de descargar informes (con opciones personalizadas ) para compartir y difudir estos análisis y comparaciones a los demás actores del sector. 
 
